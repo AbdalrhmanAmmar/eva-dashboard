@@ -2,22 +2,19 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import StatsCard from './components/StatsCard';
-import RecentActivities from './components/RecentActivities';
-import ProjectsTable from './components/ProjectsTable';
+
 import CustomerMessages from './components/CustomerMessages';
 import { 
-  Users, 
-  FileText, 
-  CheckCircle, 
-  DollarSign,
-  TrendingUp,
-  Clock,
-  Target,
-  Award,
+
   MessageSquare
 } from 'lucide-react';
+import { useMessages } from './context/messages.context';
 
 function App() {
+  const { messagesCount } = useMessages();
+  console.log("messagesCount", messagesCount)
+
+  
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -69,7 +66,7 @@ function App() {
               <div className="max-w-md animate-fade-in">
                 <StatsCard
                   title="رسائل العملاء"
-                  value="6"
+                  value={messagesCount}
                   change="2 جديدة"
                   changeType="positive"
                   icon={MessageSquare}

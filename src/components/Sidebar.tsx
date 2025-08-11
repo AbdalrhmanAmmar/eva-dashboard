@@ -2,11 +2,10 @@ import React from 'react';
 import { 
   Home, 
   BarChart3, 
-  Users, 
+
   Settings, 
   FileText, 
-  Calendar,
-  Bell,
+
   HelpCircle,
   LogOut,
   ChevronLeft,
@@ -22,10 +21,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, activeSection, onSectionChange }) => {
+
   const menuItems = [
     { icon: Home, label: 'لوحة التحكم', id: 'dashboard' },
     { icon: BarChart3, label: 'التحليلات', id: 'analytics' },
     { icon: MessageSquare, label: 'رسائل العملاء', id: 'messages' },
+    { icon: MessageSquare, label: 'طلبيات الخدمات', id: 'messages' },
     { icon: FileText, label: 'فورم الخدمات', id: 'services-form' },
     { icon: Settings, label: 'الإعدادات', id: 'settings' },
   ];

@@ -1,9 +1,9 @@
 import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
+import { LucideIcon, DivideIcon as LucideIcon } from 'lucide-react';
 
 interface StatsCardProps {
   title: string;
-  value: string;
+  value: number;
   change: string;
   changeType: 'positive' | 'negative' | 'neutral';
   icon: LucideIcon;
