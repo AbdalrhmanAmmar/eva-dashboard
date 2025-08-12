@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
   BarChart3, 
+  TrendingUp,
 
   Settings, 
   FileText, 
@@ -16,19 +18,19 @@ import {
 interface SidebarProps {
   isCollapsed: boolean;
   onToggle: () => void;
-  activeSection: string;
-  onSectionChange: (section: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, activeSection, onSectionChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = [
-    { icon: Home, label: 'لوحة التحكم', id: 'dashboard' },
-    { icon: BarChart3, label: 'التحليلات', id: 'analytics' },
-    { icon: MessageSquare, label: 'رسائل العملاء', id: 'messages' },
-    { icon: MessageSquare, label: 'طلبيات الخدمات', id: 'messages' },
-    { icon: FileText, label: 'فورم الخدمات', id: 'services-form' },
-    { icon: Settings, label: 'الإعدادات', id: 'settings' },
+    { icon: Home, label: 'لوحة التحكم', path: '/' },
+    { icon: BarChart3, label: 'التحليلات', path: '/analytics' },
+    { icon: TrendingUp, label: 'تحليلات Meta', path: '/meta-analytics' },
+    { icon: MessageSquare, label: 'رسائل العملاء', path: '/messages' },
+    { icon: FileText, label: 'فورم الخدمات', path: '/services-form' },
+    { icon: Settings, label: 'الإعدادات', path: '/settings' },
   ];
 
   const bottomItems = [
@@ -68,9 +70,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle, activeSection,
           {menuItems.map((item, index) => (
             <li key={index}>
               <button
-                onClick={() => onSectionChange(item.id)}
+                onClick={() => navigate(item.path)}
                 className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
-                  activeSection === item.id
+                  location.pathname === item.path
                     ? 'bg-gradient-primary text-white shadow-soft'
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 } w-full text-right`}

@@ -70,7 +70,7 @@ export const getPaginatedSafetyRequests = async (
   data: ISafetyRequest[];
 }> => {
   try {
-    const response = await api.get("/FormService/all", {
+    const response = await api.get("/FormService", {
       params: {
         page,
         limit,

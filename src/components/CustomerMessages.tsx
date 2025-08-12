@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, RefreshCw, Phone, User } from 'lucide-react';
-import { getContactForm, IContactForm, IContactFormResponse } from '../api/contactForm';
 import { useMessages } from '../context/messages.context';
+import { getContactForm, IContactForm, IContactFormResponse } from '../api/contactForm';
 
 const CustomerMessages: React.FC = () => {
   const { updateMessagesCount, messagesCount } = useMessages();
