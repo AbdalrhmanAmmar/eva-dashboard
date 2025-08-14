@@ -8,7 +8,12 @@ import Layout from './components/Layout';
 import Messages from './pages/Messages';
 import AddServiceForm from './pages/AddServiceForm';
 import MetaAnalytics from './pages/MetaAnalytics';
+import InventoryManagement from './pages/InventoryManagement';
+import WarehousePriority from './pages/WarehousePriority';
+
+import WarehousePage from './pages/Warehouse';
 import SmsMessages from './pages/SmsMessage';
+import CreateWarehouse from './pages/CreateWarehouse';
 
 function App() {
   return (
@@ -23,6 +28,10 @@ function App() {
 
           <Route path="services-form" element={<ServicesForms />} />
           <Route path="services-form/add-serviceForm" element={<AddServiceForm />} />
+          <Route path="inventory-management" element={<InventoryManagement />} />
+          <Route path="warehouse-priority" element={<WarehousePriority />} />
+          <Route path="warehouse-management" element={<WarehousePage />} />
+          <Route path="warehouse-create" element={<CreateWarehouse />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

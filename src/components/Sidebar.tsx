@@ -11,9 +11,14 @@ import {
   HelpCircle,
   LogOut,
   ChevronLeft,
+  ChevronDown,
   Crown,
   MessageSquare,
-  Smartphone
+  Smartphone,
+  Package,
+  Warehouse,
+  ArrowUpDown,
+  Plus
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,6 +29,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [warehouseDropdownOpen, setWarehouseDropdownOpen] = React.useState(false);
 
   const menuItems = [
     { icon: Home, label: 'لوحة التحكم', path: '/' },
@@ -32,6 +38,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { icon: MessageSquare, label: 'رسائل العملاء', path: '/messages' },
     { icon: Smartphone, label: 'رسائل SMS', path: '/sms-messages' },
     { icon: FileText, label: 'فورم الخدمات', path: '/services-form' },
+    { icon: Package, label: 'إدارة الكميات', path: '/inventory-management' }
+  ];
+
+  const warehouseItems = [
+    { icon: Warehouse, label: 'عرض المخازن', path: '/warehouse-management' },
+    { icon: ArrowUpDown, label: 'أولوية السحب', path: '/warehouse-priority' },
+    { icon: Plus, label: 'إضافة مخزن', path: '/warehouse-create' }
+  ];
+
+  const otherItems = [
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
   ];
 
@@ -70,6 +86,70 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
           {menuItems.map((item, index) => (
+            <li key={index}>
+              <button
+                onClick={() => navigate(item.path)}
+                className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
+                  location.pathname === item.path
+                    ? 'bg-gradient-primary text-white shadow-soft'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                } w-full text-right`}
+              >
+                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'ml-3'}`} />
+                {!isCollapsed && (
+                  <span className="font-medium">{item.label}</span>
+                )}
+              </button>
+            </li>
+          ))}
+          
+          {/* Warehouse Dropdown */}
+          <li>
+            <button
+              onClick={() => !isCollapsed && setWarehouseDropdownOpen(!warehouseDropdownOpen)}
+              className={`flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-200 group w-full text-right ${
+                location.pathname.includes('/warehouse') 
+                  ? 'bg-gradient-primary text-white shadow-soft'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center">
+                <Warehouse className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'ml-3'}`} />
+                {!isCollapsed && (
+                  <span className="font-medium">المخازن</span>
+                )}
+              </div>
+              {!isCollapsed && (
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                  warehouseDropdownOpen ? 'rotate-180' : ''
+                }`} />
+              )}
+            </button>
+            
+            {/* Dropdown Items */}
+            {!isCollapsed && warehouseDropdownOpen && (
+              <ul className="mt-2 space-y-1 pr-6">
+                {warehouseItems.map((item, index) => (
+                  <li key={index}>
+                    <button
+                      onClick={() => navigate(item.path)}
+                      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 group w-full text-right text-sm ${
+                        location.pathname === item.path
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                      }`}
+                    >
+                      <item.icon className="w-4 h-4 ml-2" />
+                      <span className="font-medium">{item.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+          
+          {/* Other Items */}
+          {otherItems.map((item, index) => (
             <li key={index}>
               <button
                 onClick={() => navigate(item.path)}
