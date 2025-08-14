@@ -44,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const warehouseItems = [
     { icon: Warehouse, label: 'عرض المخازن', path: '/warehouse-management' },
     { icon: ArrowUpDown, label: 'أولوية السحب', path: '/warehouse-priority' },
-    { icon: Plus, label: 'إضافة مخزن', path: '/warehouse-create' }
+    { icon: Plus, label: 'إضافة مخزن', path: '/warehouse-add' }
   ];
 
   const otherItems = [
@@ -57,14 +57,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   ];
 
   return (
-    <div className={`bg-white border-r border-border h-screen transition-all duration-300 ease-in-out ${
+    <div className={`bg-white border-l border-border h-screen transition-all duration-300 ease-in-out ${
       isCollapsed ? 'w-16' : 'w-64'
     } flex flex-col shadow-soft`}>
       {/* Header */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <div className="flex items-center space-x-3 space-x-reverse">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <Crown className="w-6 h-6 text-white" />
               </div>
@@ -76,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
             className="p-2 hover:bg-secondary rounded-lg transition-colors"
           >
             <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ${
-              isCollapsed ? 'rotate-180' : ''
+              isCollapsed ? '' : 'rotate-180'
             }`} />
           </button>
         </div>
@@ -95,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 } w-full text-right`}
               >
-                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'ml-3'}`} />
+                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'mr-3'}`} />
                 {!isCollapsed && (
                   <span className="font-medium">{item.label}</span>
                 )}
@@ -114,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
               }`}
             >
               <div className="flex items-center">
-                <Warehouse className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'ml-3'}`} />
+                <Warehouse className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'mr-3'}`} />
                 {!isCollapsed && (
                   <span className="font-medium">المخازن</span>
                 )}
@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
             
             {/* Dropdown Items */}
             {!isCollapsed && warehouseDropdownOpen && (
-              <ul className="mt-2 space-y-1 pr-6">
+              <ul className="mt-2 space-y-1 pl-6">
                 {warehouseItems.map((item, index) => (
                   <li key={index}>
                     <button
@@ -139,7 +139,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                           : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
                       }`}
                     >
-                      <item.icon className="w-4 h-4 ml-2" />
+                      <item.icon className="w-4 h-4 mr-2" />
                       <span className="font-medium">{item.label}</span>
                     </button>
                   </li>
@@ -159,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 } w-full text-right`}
               >
-                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'ml-3'}`} />
+                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'mr-3'}`} />
                 {!isCollapsed && (
                   <span className="font-medium">{item.label}</span>
                 )}
@@ -180,7 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                   item.label === 'تسجيل الخروج' ? 'text-destructive hover:bg-destructive/10' : ''
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'ml-3'}`} />
+                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : 'mr-3'}`} />
                 {!isCollapsed && (
                   <span className="font-medium">{item.label}</span>
                 )}

@@ -18,8 +18,8 @@ const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <div className={`fixed lg:static inset-y-0 right-0 z-50 transition-transform duration-300 ${
-        mobileMenuOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+      <div className={`fixed lg:static inset-y-0 left-0 z-50 transition-transform duration-300 ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         <Sidebar 
           isCollapsed={sidebarCollapsed} 
