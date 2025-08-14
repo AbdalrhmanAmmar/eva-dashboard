@@ -12,7 +12,8 @@ import {
   LogOut,
   ChevronLeft,
   Crown,
-  MessageSquare
+  MessageSquare,
+  Smartphone
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { icon: BarChart3, label: 'التحليلات', path: '/analytics' },
     { icon: TrendingUp, label: 'تحليلات Meta', path: '/meta-analytics' },
     { icon: MessageSquare, label: 'رسائل العملاء', path: '/messages' },
+    { icon: Smartphone, label: 'رسائل SMS', path: '/sms-messages' },
     { icon: FileText, label: 'فورم الخدمات', path: '/services-form' },
     { icon: Settings, label: 'الإعدادات', path: '/settings' },
   ];

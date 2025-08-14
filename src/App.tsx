@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 import Messages from './pages/Messages';
 import AddServiceForm from './pages/AddServiceForm';
 import MetaAnalytics from './pages/MetaAnalytics';
+import SmsMessages from './pages/SmsMessage';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="messages" element={<Messages />} />
+          <Route path="sms-messages" element={<SmsMessages />} />
           <Route path="analytics" element={<Analytics />} />
                     <Route path="meta-analytics" element={<MetaAnalytics />} />
 
