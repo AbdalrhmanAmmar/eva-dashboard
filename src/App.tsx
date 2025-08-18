@@ -14,6 +14,7 @@ import WarehousePriority from './pages/WarehousePriority';
 import WarehousePage from './pages/Warehouse';
 import SmsMessages from './pages/SmsMessage';
 import CreateWarehouse from './pages/CreateWarehouse';
+import Products from './pages/Products';
 
 function App() {
   return (
@@ -33,6 +34,8 @@ function App() {
           <Route path="warehouse-management" element={<WarehousePage />} />
           <Route path="warehouse-create" element={<CreateWarehouse />} />
           <Route path="settings" element={<Settings />} />
+                    <Route path="products" element={<Products />} />
+
         </Route>
       </Routes>
     </Router>

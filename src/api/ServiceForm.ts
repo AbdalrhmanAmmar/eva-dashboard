@@ -86,3 +86,14 @@ export const getPaginatedSafetyRequests = async (
     );
   }
 };
+
+export const getAllEngineeringPlans = async () => {
+  try {
+    const res = await api.get(`/engineering-plans`);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "فشل في جلب الخطط الهندسية"
+    );
+  }
+};
