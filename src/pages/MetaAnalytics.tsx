@@ -145,14 +145,14 @@ const MetaAnalytics: React.FC = () => {
             <option value="90days">آخر 90 يوم</option>
           </select>
           
-          <button
+          {/* <button
             onClick={handleRefresh}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             تحديث
-          </button>
+          </button> */}
           
           <button 
             onClick={handleExport}

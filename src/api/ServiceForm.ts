@@ -89,7 +89,7 @@ export const getPaginatedSafetyRequests = async (
 
 export const getAllEngineeringPlans = async () => {
   try {
-    const res = await api.get(`/engineering-plans`);
+    const res = await api.get(`/engineeringPlanForm`);
     return res.data;
   } catch (error: any) {
     throw new Error(
@@ -97,3 +97,44 @@ export const getAllEngineeringPlans = async () => {
     );
   }
 };
+export const getrehabilitation = async () => {
+  try {
+    const res = await api.get(`/rehabilitationRoutes`);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "فشل في جلب الخطط الهندسية"
+    );
+  }
+};
+
+export const getAllsafetyplans= async()=>{
+  try {
+    const res = await api.get(`/rehabilitationRoutes`);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "فشل في جلب الخطط الهندسية"
+    );
+  }
+}
+export const getMaintenanceContracts= async()=>{
+  try {
+    const res = await api.get(`/MaintenanceContract`);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "فشل في جلب الخطط الهندسية"
+    );
+  }
+}
+export const getAllSafetySystemsInstallation= async()=>{
+  try {
+    const res = await api.get(`/SafetySystemsInstallation`);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "فشل في جلب الخطط الهندسية"
+    );
+  }
+}
