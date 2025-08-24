@@ -1,0 +1,33 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "analytics": "Analytics",
+    "metaAnalytics": "Meta Analytics",
+    "messages": "Customer Messages",
+    "smsMessages": "SMS Messages",
+    "servicesForm": "Services Form",
+    "inventoryManagement": "Inventory Management",
+    "warehouses": "Warehouses",
+    "viewWarehouses": "View Warehouses",
+    "priority": "Withdrawal Priority",
+    "addWarehouse": "Add Warehouse",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Logout"
+  },
+  "brand": {
+    "name": "Eva"
+  },
+  "language": {
+    "switchToArabic": "العربية",
+    "switchToEnglish": "English"
+  },
+   "header": {
+    "welcome": "Welcome to Ifaa",
+    "subtitle": "Overview of your platform performance",
+    "search": "Search...",
+    "username": "Ahmed Mohamed",
+    "role": "System Administrator"
+  }
+  
+}

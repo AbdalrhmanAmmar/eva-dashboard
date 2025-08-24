@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import { MessagesProvider } from './context/messages.context.tsx';
 import { ToastContainer } from 'react-toastify';
+import './i18n';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

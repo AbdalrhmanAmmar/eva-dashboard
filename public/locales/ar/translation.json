@@ -1,0 +1,32 @@
+{
+  "sidebar": {
+    "dashboard": "لوحة التحكم",
+    "analytics": "التحليلات",
+    "metaAnalytics": "تحليلات Meta",
+    "messages": "رسائل العملاء",
+    "smsMessages": "رسائل SMS",
+    "servicesForm": "فورم الخدمات",
+    "inventoryManagement": "إدارة الكميات",
+    "warehouses": "المخازن",
+    "viewWarehouses": "عرض المخازن",
+    "priority": "أولوية السحب",
+    "addWarehouse": "إضافة مخزن",
+    "settings": "الإعدادات",
+    "help": "المساعدة",
+    "logout": "تسجيل الخروج"
+  },
+  "brand": {
+    "name": "إيفاء"
+  },
+  "language": {
+    "switchToArabic": "العربية",
+    "switchToEnglish": "English"
+  },
+  "header": {
+    "welcome": "مرحباً بك في إيفاء",
+    "subtitle": "نظرة عامة على أداء منصتك",
+    "search": "بحث...",
+    "username": "أحمد محمد",
+    "role": "مدير النظام"
+  }
+}
