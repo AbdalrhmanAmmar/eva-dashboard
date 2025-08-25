@@ -11,11 +11,13 @@ import {
   FileText,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  MoreVertical
 } from 'lucide-react';
-import { getAllEngineeringPlans } from '../../api/ServiceForm';
+import { getAllEngineeringPlans, updateEngineeringPlanStatus } from '../../api/ServiceForm';
+import { useNavigate } from 'react-router-dom';
 
-interface IEngineeringPlan {
+export interface IEngineeringPlan {
   _id: string;
   name: string;
   phone: string;
@@ -23,11 +25,13 @@ interface IEngineeringPlan {
   address: string;
   ownerId: string;
   ownershipDoc: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: 'pending' | 'completed'
   createdAt: string;
+  updatedAt: string;
 }
 
 const EngineeringPlan: React.FC = () => {
+  const navigate = useNavigate();
   const [plans, setPlans] = useState<IEngineeringPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +61,30 @@ const EngineeringPlan: React.FC = () => {
 
     fetchPlans();
   }, []);
+
+  // دالة لتحديث حالة الخطة
+  const handleStatusUpdate = async (id: string, newStatus: 'pending' | 'approved' | 'rejected') => {
+    try {
+      await updateEngineeringPlanStatus(id, newStatus);
+      
+      // تحديث الحالة محلياً
+      setPlans(prevPlans => 
+        prevPlans.map(plan => 
+          plan._id === id ? { ...plan, status: newStatus } : plan
+        )
+      );
+      
+      // إشعار بنجاح التحديث
+      alert('تم تحديث الحالة بنجاح');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء تحديث الحالة');
+    }
+  };
+
+  // دالة للانتقال لصفحة التفاصيل
+  const handleViewDetails = (id: string) => {
+    navigate(`/engineering-plans/${id}`);
+  };
 
   // تصفية البيانات حسب حالة البحث والفلتر
   const filteredPlans = plans.filter(plan => {
@@ -123,14 +151,7 @@ const EngineeringPlan: React.FC = () => {
     }
   };
 
-  const getStatusText = (status?: string) => {
-    const statusMap: Record<string, string> = {
-      pending: 'قيد الانتظار',
-      approved: 'موافق عليه',
-      rejected: 'مرفوض'
-    };
-    return status ? statusMap[status] || status : 'غير محدد';
-  };
+
 
   if (loading) {
     return (
@@ -252,7 +273,9 @@ const EngineeringPlan: React.FC = () => {
                   )}
                 </div>
               </th>
-       
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                الإجراءات
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -300,12 +323,45 @@ const EngineeringPlan: React.FC = () => {
                     </a>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border ${getStatusColor(plan.status)}`}>
-                      {getStatusIcon(plan.status)}
-                      {getStatusText(plan.status)}
-                    </span>
+                    {plan.status === 'pending' ? (
+                      <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border ${getStatusColor(plan.status)}`}>
+                        قيد الانتظار
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border text-blue-600 bg-blue-50 border-blue-200`}>
+                        مكتمل
+                      </span>
+                    )}
                   </td>
-                
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleViewDetails(plan._id)}
+                        className="text-blue-600 hover:text-blue-900 p-1"
+                        title="عرض التفاصيل"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+
+
+
+                      
+                    {plan.status !== 'completed' && (
+                         <button
+                              onClick={() => handleStatusUpdate(plan._id, 'completed')}
+                              className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-100 w-full text-right"
+                              role="menuitem"
+                            >
+                              مكتمل
+                            </button>
+
+                    )}
+
+                         
+                        
+                      
+                    </div>
+                  </td>
                 </tr>
               ))
             ) : (

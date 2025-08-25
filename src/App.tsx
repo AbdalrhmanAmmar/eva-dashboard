@@ -15,6 +15,10 @@ import WarehousePage from './pages/Warehouse';
 import SmsMessages from './pages/SmsMessage';
 import CreateWarehouse from './pages/CreateWarehouse';
 import Products from './pages/Products';
+import Users from './pages/Users';
+import DetailPage from './pages/DetailPage';
+import EngineeringPlanDetails from './pages/EngineeringPlanDetails';
+import UserProfilePage from './pages/UserProfilePage';
 
 function App() {
   return (
@@ -23,6 +27,8 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="messages" element={<Messages />} />
+          <Route path="users" element={<Users />} />
+          <Route path="users/:id" element={<UserProfilePage />} />
           <Route path="sms-messages" element={<SmsMessages />} />
           <Route path="analytics" element={<Analytics />} />
                     <Route path="meta-analytics" element={<MetaAnalytics />} />
@@ -32,6 +38,10 @@ function App() {
           <Route path="inventory-management" element={<InventoryManagement />} />
           <Route path="warehouse-priority" element={<WarehousePriority />} />
           <Route path="warehouse-management" element={<WarehousePage />} />
+                  <Route path="/safety-requests/:id" element={<DetailPage />} />
+                  <Route path="/engineering-plans/:id" element={<EngineeringPlanDetails />} />
+
+
           <Route path="warehouse-create" element={<CreateWarehouse />} />
           <Route path="settings" element={<Settings />} />
                     <Route path="products" element={<Products />} />

@@ -35,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const menuItems = [
     { icon: Home, label: t('sidebar.dashboard'), path: '/' },
     { icon: BarChart3, label: t('sidebar.analytics'), path: '/analytics' },
+    { icon: BarChart3, label: "العملاء", path: '/users' },
     { icon: TrendingUp, label: t('sidebar.metaAnalytics'), path: '/meta-analytics' },
     { icon: MessageSquare, label: t('sidebar.messages'), path: '/messages' },
     { icon: Smartphone, label: t('sidebar.smsMessages'), path: '/sms-messages' },
@@ -45,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const warehouseItems = [
     { icon: Warehouse, label: t('sidebar.viewWarehouses'), path: '/warehouse-management' },
     { icon: ArrowUpDown, label: t('sidebar.priority'), path: '/warehouse-priority' },
-    { icon: Plus, label: t('sidebar.addWarehouse'), path: '/warehouse-add' }
+    { icon: Plus, label: t('sidebar.addWarehouse'), path: '/warehouse-create' }
   ];
 
   const otherItems = [

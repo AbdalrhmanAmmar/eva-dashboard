@@ -10,9 +10,13 @@ import {
   ArrowUpDown,
   Warehouse,
   MapPin,
-  Building
+  Building,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
-import { getAllWarehouses } from '../api/warehouseAPI';
+import { getAllWarehouses, updateWarehouse } from '../api/warehouseAPI';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface WarehouseItem {
   _id: string;
@@ -27,6 +31,7 @@ const WarehousePriority: React.FC = () => {
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
@@ -37,12 +42,9 @@ const WarehousePriority: React.FC = () => {
         setLoading(true);
         setError(null);
         
-     
         const data = await getAllWarehouses();
         const sortedWarehouses = data.warehouses.sort((a, b) => a.order - b.order);
         
-        // بيانات تجريبية مرتبة حسب الأولوية
-    
         // محاكاة تأخير الشبكة
         await new Promise(resolve => setTimeout(resolve, 1000));
         
@@ -50,6 +52,7 @@ const WarehousePriority: React.FC = () => {
       } catch (err) {
         setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
         console.error('خطأ في جلب المخازن:', err);
+        toast.error('فشل في تحميل بيانات المخازن');
       } finally {
         setLoading(false);
       }
@@ -97,28 +100,27 @@ const WarehousePriority: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      setLoading(true);
+      setSaving(true);
       setError(null);
       
-      // محاكاة API call للحفظ
-      // const updatePromises = warehouses.map(warehouse => 
-      //   updateWarehouse(warehouse._id, { order: warehouse.order })
-      // );
-      // await Promise.all(updatePromises);
+      const updatePromises = warehouses.map(warehouse => 
+        updateWarehouse(warehouse._id, { order: warehouse.order })
+      );
+      await Promise.all(updatePromises);
       
       // محاكاة تأخير الشبكة
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       console.log('تم حفظ ترتيب المخازن:', warehouses);
-      
-      // يمكن إضافة toast notification هنا
-      // toast.success('تم تحديث ترتيب المخازن بنجاح');
+      toast.success('تم تحديث ترتيب المخازن بنجاح');
       
     } catch (err) {
-      setError('حدث خطأ أثناء حفظ الترتيب');
+      const errorMsg = 'حدث خطأ أثناء حفظ الترتيب';
+      setError(errorMsg);
       console.error('خطأ في الحفظ:', err);
+      toast.error(errorMsg);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -126,10 +128,18 @@ const WarehousePriority: React.FC = () => {
     setLoading(true);
     try {
       // إعادة جلب البيانات
+      const data = await getAllWarehouses();
+      const sortedWarehouses = data.warehouses.sort((a, b) => a.order - b.order);
+      setWarehouses(sortedWarehouses);
+      
+      // محاكاة تأخير الشبكة
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // يمكن إعادة استدعاء fetchWarehouses هنا
+      
+      toast.info('تم تحديث البيانات بنجاح');
     } catch (err) {
-      setError('حدث خطأ أثناء تحديث البيانات');
+      const errorMsg = 'حدث خطأ أثناء تحديث البيانات';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -210,6 +220,20 @@ const WarehousePriority: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-left"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={true}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
@@ -231,11 +255,11 @@ const WarehousePriority: React.FC = () => {
           
           <button 
             onClick={handleSave}
-            disabled={loading}
-            className="btn-gradient flex items-center gap-2"
+            disabled={saving}
+            className="btn-gradient flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            {loading ? 'جاري الحفظ...' : 'حفظ الترتيب'}
+            {saving ? 'جاري الحفظ...' : 'حفظ الترتيب'}
           </button>
         </div>
       </div>
@@ -301,8 +325,8 @@ const WarehousePriority: React.FC = () => {
               <div className="flex items-center gap-4">
                 {/* Drag Handle */}
                 <div className="flex items-center gap-3">
-                  <GripVertical className="w-6 h-6 text-muted-foreground hover:text-primary transition-colors" />
-                  <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  <GripVertical className="w-6 h-6 text-muted-foreground hover:text-primary transition-colors cursor-grab" />
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                     {warehouse.order}
                   </div>
                 </div>
@@ -338,19 +362,19 @@ const WarehousePriority: React.FC = () => {
                   <button
                     onClick={() => moveUp(index)}
                     disabled={index === 0}
-                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     title="تحريك لأعلى"
                   >
-                    <ArrowUpDown className="w-4 h-4 rotate-180" />
+                    <ArrowUp className="w-5 h-5" />
                   </button>
                   
                   <button
                     onClick={() => moveDown(index)}
                     disabled={index === warehouses.length - 1}
-                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     title="تحريك لأسفل"
                   >
-                    <ArrowUpDown className="w-4 h-4" />
+                    <ArrowDown className="w-5 h-5" />
                   </button>
                 </div>
               </div>

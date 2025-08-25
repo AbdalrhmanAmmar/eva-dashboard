@@ -14,9 +14,11 @@ import {
   Clock,
   Building,
   Hash,
-  AlertTriangle
+  AlertTriangle,
+  CheckSquare // أيقونة جديدة للإكمال
 } from 'lucide-react';
-import { getPaginatedSafetyRequests } from '../../api/ServiceForm';
+import { getPaginatedSafetyRequests, updateSafetyRequestStatus } from '../../api/ServiceForm'; // استيراد الدالة الجديدة
+import { useNavigate } from 'react-router-dom';
 
 interface ISafetyRequest {
   _id: string;
@@ -35,7 +37,7 @@ interface ISafetyRequest {
   extinguishersCount: number;
   smokeDetectorsCount: number;
   emergencyLightsCount: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'completed'; // إضافة الحالة الجديدة
   createdAt: string;
   updatedAt: string;
 }
@@ -48,7 +50,10 @@ const TechnicalReportImmediate: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{key: keyof ISafetyRequest; direction: 'asc' | 'desc'} | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [updatingId, setUpdatingId] = useState<string | null>(null); // لتتبع العنصر الذي يتم تحديثه
   const itemsPerPage = 10;
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -65,6 +70,36 @@ const TechnicalReportImmediate: React.FC = () => {
 
     fetchRequests();
   }, []);
+
+  // دالة لتحديث حالة الطلب
+  const handleUpdateStatus = async (id: string, currentStatus: string) => {
+    // السماح بالتحديث فقط إذا كانت الحالة الحالية هي "pending"
+    if (currentStatus !== 'pending') {
+      setError('يمكن تحديث الحالة فقط من "قيد الانتظار" إلى "مكتمل"');
+      return;
+    }
+
+    setUpdatingId(id);
+    try {
+      const response = await updateSafetyRequestStatus(id, 'completed');
+      
+      if (response.success) {
+        // تحديث الحالة في الواجهة
+        setRequests(prevRequests => 
+          prevRequests.map(request => 
+            request._id === id 
+              ? { ...request, status: 'completed' } 
+              : request
+          )
+        );
+        setError(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'فشل تحديث الحالة. يرجى المحاولة لاحقًا.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   // تصفية البيانات حسب حالة البحث والفلتر
   const filteredRequests = requests.filter(request => {
@@ -115,6 +150,8 @@ const TechnicalReportImmediate: React.FC = () => {
         return <CheckCircle className="w-4 h-4" />;
       case 'rejected':
         return <XCircle className="w-4 h-4" />;
+      case 'completed':
+        return <CheckSquare className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -126,6 +163,8 @@ const TechnicalReportImmediate: React.FC = () => {
         return 'text-green-600 bg-green-50 border-green-200';
       case 'rejected':
         return 'text-red-600 bg-red-50 border-red-200';
+      case 'completed':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
       default:
         return 'text-orange-600 bg-orange-50 border-orange-200';
     }
@@ -135,7 +174,8 @@ const TechnicalReportImmediate: React.FC = () => {
     const statusMap: Record<string, string> = {
       pending: 'قيد الانتظار',
       approved: 'موافق عليه',
-      rejected: 'مرفوض'
+      rejected: 'مرفوض',
+      completed: 'مكتمل'
     };
     return statusMap[status] || 'غير محدد';
   };
@@ -190,6 +230,7 @@ const TechnicalReportImmediate: React.FC = () => {
             <option value="pending">قيد الانتظار</option>
             <option value="approved">موافق عليه</option>
             <option value="rejected">مرفوض</option>
+            <option value="completed">مكتمل</option>
           </select>
         </div>
       </div>
@@ -260,13 +301,19 @@ const TechnicalReportImmediate: React.FC = () => {
                   )}
                 </div>
               </th>
-          
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                إجراءات
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedRequests.length > 0 ? (
               paginatedRequests.map((request) => (
-                <tr key={request._id} className="hover:bg-gray-50">
+                <tr 
+  key={request._id} 
+  className="hover:bg-gray-50 cursor-pointer"
+  onClick={() => navigate(`/safety-requests/${request._id}`)}
+>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {request.nameService}
                   </td>
@@ -313,7 +360,27 @@ const TechnicalReportImmediate: React.FC = () => {
                       {getStatusText(request.status)}
                     </span>
                   </td>
-              
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {request.status === 'pending' && (
+                      <button
+                        onClick={() => handleUpdateStatus(request._id, request.status)}
+                        disabled={updatingId === request._id}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {updatingId === request._id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                            جاري التحديث...
+                          </>
+                        ) : (
+                          <>
+                            <CheckSquare className="h-4 w-4" />
+                            تم الإكمال
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (

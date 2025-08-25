@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-
   ChevronUp, 
   ChevronDown, 
   Search,
@@ -9,27 +8,39 @@ import {
   FileText,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Eye,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
-import { getAllEngineeringPlans, getrehabilitation } from '../../api/ServiceForm';
+import { getAllEngineeringPlans, getrehabilitation, updateRehabilitationStatus } from '../../api/ServiceForm';
+import { useNavigate } from 'react-router-dom';
 
-interface IEngineeringPlan {
+interface IRehabilitationPlan {
   _id: string;
   name: string;
   phone: string;
   address: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  activity?: string;
+  ownerId?: string;
+  ownershipDoc?: string;
+  status?: 'pending' | 'approved' | 'rejected' | 'completed';
   createdAt: string;
+  updatedAt: string;
 }
 
 const SystemRehabilitation: React.FC = () => {
-  const [plans, setPlans] = useState<IEngineeringPlan[]>([]);
+  const navigate = useNavigate();
+  const [plans, setPlans] = useState<IRehabilitationPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortConfig, setSortConfig] = useState<{key: keyof IEngineeringPlan; direction: 'asc' | 'desc'} | null>(null);
+  const [sortConfig, setSortConfig] = useState<{key: keyof IRehabilitationPlan; direction: 'asc' | 'desc'} | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedPlan, setSelectedPlan] = useState<IRehabilitationPlan | null>(null);
+  const [showStatusMenu, setShowStatusMenu] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -53,12 +64,39 @@ const SystemRehabilitation: React.FC = () => {
     fetchPlans();
   }, []);
 
+  // دالة لتحديث حالة الخطة
+  const handleStatusUpdate = async (id: string, newStatus: 'pending' | 'completed') => {
+    try {
+      await updateRehabilitationStatus(id, "completed");
+      
+      // تحديث الحالة محلياً
+      setPlans(prevPlans => 
+        prevPlans.map(plan => 
+          plan._id === id ? { ...plan, status: newStatus } : plan
+        )
+      );
+      
+      // إغلاق القائمة
+      setShowStatusMenu(null);
+      
+      // إشعار بنجاح التحديث
+      alert('تم تحديث الحالة بنجاح');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء تحديث الحالة');
+    }
+  };
+
+  // دالة للانتقال لصفحة التفاصيل
+  const handleViewDetails = (id: string) => {
+    navigate(`/rehabilitation-plans/${id}`);
+  };
+
   // تصفية البيانات حسب حالة البحث والفلتر
   const filteredPlans = plans.filter(plan => {
     const matchesSearch = 
       plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       plan.phone.includes(searchTerm) ||
-      plan.activity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (plan.activity && plan.activity.toLowerCase().includes(searchTerm.toLowerCase())) ||
       plan.address.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || plan.status === statusFilter;
@@ -88,7 +126,7 @@ const SystemRehabilitation: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  const requestSort = (key: keyof IEngineeringPlan) => {
+  const requestSort = (key: keyof IRehabilitationPlan) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -99,6 +137,7 @@ const SystemRehabilitation: React.FC = () => {
   const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'approved':
+      case 'completed':
         return <CheckCircle className="w-4 h-4" />;
       case 'rejected':
         return <XCircle className="w-4 h-4" />;
@@ -110,6 +149,7 @@ const SystemRehabilitation: React.FC = () => {
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'approved':
+      case 'completed':
         return 'text-green-600 bg-green-50 border-green-200';
       case 'rejected':
         return 'text-red-600 bg-red-50 border-red-200';
@@ -122,7 +162,8 @@ const SystemRehabilitation: React.FC = () => {
     const statusMap: Record<string, string> = {
       pending: 'قيد الانتظار',
       approved: 'موافق عليه',
-      rejected: 'مرفوض'
+      rejected: 'مرفوض',
+      completed: 'مكتمل'
     };
     return status ? statusMap[status] || status : 'غير محدد';
   };
@@ -177,6 +218,7 @@ const SystemRehabilitation: React.FC = () => {
             <option value="pending">قيد الانتظار</option>
             <option value="approved">موافق عليه</option>
             <option value="rejected">مرفوض</option>
+            <option value="completed">مكتمل</option>
           </select>
         </div>
       </div>
@@ -208,7 +250,6 @@ const SystemRehabilitation: React.FC = () => {
                   )}
                 </div>
               </th>
-         
               <th 
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                 onClick={() => requestSort('address')}
@@ -220,7 +261,6 @@ const SystemRehabilitation: React.FC = () => {
                   )}
                 </div>
               </th>
-    
               <th 
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                 onClick={() => requestSort('status')}
@@ -232,7 +272,9 @@ const SystemRehabilitation: React.FC = () => {
                   )}
                 </div>
               </th>
-       
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                الإجراءات
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -248,27 +290,53 @@ const SystemRehabilitation: React.FC = () => {
                       {plan.phone}
                     </div>
                   </td>
-            
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <MapPin className="h-4 w-4 text-gray-400" />
                       {plan.address}
                     </div>
                   </td>
-    
-                 
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border ${getStatusColor(plan.status)}`}>
-                      {getStatusIcon(plan.status)}
-                      {getStatusText(plan.status)}
-                    </span>
+                        {plan.status === 'pending' ? (
+                      <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border ${getStatusColor(plan.status)}`}>
+                        قيد الانتظار
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border text-blue-600 bg-blue-50 border-blue-200`}>
+                        مكتمل
+                      </span>
+                    )}
                   </td>
-                
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleViewDetails(plan._id)}
+                        className="text-blue-600 hover:text-blue-900 p-1"
+                        title="عرض التفاصيل"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                              {plan.status !== 'completed' && (
+                         <button
+                              onClick={() => handleStatusUpdate(plan._id, 'completed')}
+                              className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-100 w-full text-right"
+                              role="menuitem"
+                            >
+                              مكتمل
+                            </button>
+
+                    )}
+                      
+                      
+                      
+                 
+                    </div>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
                   لا توجد بيانات متاحة
                 </td>
               </tr>

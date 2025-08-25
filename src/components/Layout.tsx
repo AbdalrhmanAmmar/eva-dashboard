@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useTranslation } from 'react-i18next';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Layout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -19,6 +21,7 @@ const Layout: React.FC = () => {
 
   // نحدد الاتجاه حسب اللغة الحالية
   const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+  const isRTL = dir === 'rtl';
 
   return (
     <div dir={dir} className="min-h-screen bg-background flex">
@@ -47,6 +50,20 @@ const Layout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Toast Container - يظهر في جميع الصفحات */}
+      <ToastContainer
+        position={isRTL ? "top-left" : "top-right"}
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={isRTL}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </div>
   );
 };
