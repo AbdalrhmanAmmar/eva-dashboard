@@ -19,6 +19,11 @@ import Users from './pages/Users';
 import DetailPage from './pages/DetailPage';
 import EngineeringPlanDetails from './pages/EngineeringPlanDetails';
 import UserProfilePage from './pages/UserProfilePage';
+import MaintenanceContractDetails from './components/MaintenanceContractDetails';
+import ProductManagement from './pages/Products/ProductManagement';
+import ProductForm from './pages/Products/ProductForm';
+import WarehouseEdit from './pages/warehouse/WarehouseEdit';
+import WarehouseInventory from './pages/warehouse/inventory/WarehouseInventory';
 
 function App() {
   return (
@@ -40,6 +45,12 @@ function App() {
           <Route path="warehouse-management" element={<WarehousePage />} />
                   <Route path="/safety-requests/:id" element={<DetailPage />} />
                   <Route path="/engineering-plans/:id" element={<EngineeringPlanDetails />} />
+                  <Route path="/maintenance-contracts/:id" element={<MaintenanceContractDetails />} />
+                  <Route path="/Product-Management" element={<ProductManagement />} />
+                  <Route path="/product-create" element={<ProductForm />} />
+                  <Route path="/edit-warehouse/:id" element={<WarehouseEdit />} />
+                  <Route path="/warehouse-inventory" element={<WarehouseInventory />} />
+
 
 
           <Route path="warehouse-create" element={<CreateWarehouse />} />

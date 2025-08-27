@@ -202,19 +202,36 @@ export const updateRehabilitationStatus = async (
     );
   }
 };
-
-
-
-export const getAllsafetyplans= async()=>{
+export const updateSafetyStatus = async (
+  id: string,
+  status: "pending" | "completed"
+) => {
   try {
-    const res = await api.get(`/rehabilitationRoutes`);
+    const res = await api.patch(`/SafetySystemsInstallation/${id}/status`, { status });
     return res.data;
   } catch (error: any) {
     throw new Error(
-      error.response?.data?.message || "فشل في جلب الخطط الهندسية"
+      error.response?.data?.message || "فشل في تحديث حالة طلب التأهيل"
     );
   }
-}
+};
+export const updateMaintenanceContractStatus = async (
+  id: string,
+  status: "pending" | "completed"
+) => {
+  try {
+    const res = await api.patch(`/MaintenanceContract/${id}/status`, { status });
+    return res.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "فشل في تحديث حالة طلب التأهيل"
+    );
+  }
+};
+
+
+
+
 export const getMaintenanceContracts= async()=>{
   try {
     const res = await api.get(`/MaintenanceContract`);
@@ -225,6 +242,17 @@ export const getMaintenanceContracts= async()=>{
     );
   }
 }
+
+export const getMaintenanceContractById = async (id: string) => {
+  try {
+    const res = await api.get(`/MaintenanceContract/${id}`);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message || "فشل في جلب تفاصيل طلب التأهيل"
+    );
+  }
+};
 export const getAllSafetySystemsInstallation= async()=>{
   try {
     const res = await api.get(`/SafetySystemsInstallation`);

@@ -314,7 +314,6 @@ const SystemRehabilitation: React.FC = () => {
                         className="text-blue-600 hover:text-blue-900 p-1"
                         title="عرض التفاصيل"
                       >
-                        <Eye className="h-4 w-4" />
                       </button>
                               {plan.status !== 'completed' && (
                          <button

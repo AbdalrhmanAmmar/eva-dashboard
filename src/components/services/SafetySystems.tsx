@@ -7,16 +7,19 @@ import {
   FileText,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  CheckSquare
 } from 'lucide-react';
-import { getAllSafetySystemsInstallation } from '../../api/ServiceForm';
+import { getAllSafetySystemsInstallation, updateSafetyStatus } from '../../api/ServiceForm';
+
+import { getFileUrl } from '../../utils/fileUrl';
 
 interface ISafetySystem {
   _id: string;
   name: string;
   phone: string;
   safetyPlanFile: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: 'pending' | 'completed'; // تحديث الحالات المتاحة
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +32,7 @@ const SafetySystems: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{key: keyof ISafetySystem; direction: 'asc' | 'desc'} | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [updatingId, setUpdatingId] = useState<string | null>(null); // إضافة حالة لتتبع التحديث
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -53,6 +57,26 @@ const SafetySystems: React.FC = () => {
     fetchSystems();
   }, []);
 
+  // دالة لتحديث حالة النظام
+  const handleUpdateStatus = async (id: string, currentStatus: 'pending' | 'completed' | undefined) => {
+    // تحديد الحالة الجديدة بناءً على الحالة الحالية
+    const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+    
+    setUpdatingId(id);
+    try {
+      await updateSafetyStatus(id, newStatus);
+      setSystems(prevSystems =>
+        prevSystems.map(system =>
+          system._id === id ? { ...system, status: newStatus } : system
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء تحديث الحالة');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   // تصفية البيانات حسب حالة البحث والفلتر
   const filteredSystems = systems.filter(system => {
     const matchesSearch = 
@@ -69,10 +93,14 @@ const SafetySystems: React.FC = () => {
     if (!sortConfig) return filteredSystems;
 
     return [...filteredSystems].sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
+      // التعامل مع القيم غير المعرفة
+      const aValue = a[sortConfig.key] || '';
+      const bValue = b[sortConfig.key] || '';
+      
+      if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
+      if (aValue > bValue) {
         return sortConfig.direction === 'asc' ? 1 : -1;
       }
       return 0;
@@ -96,7 +124,7 @@ const SafetySystems: React.FC = () => {
 
   const getStatusIcon = (status?: string) => {
     switch (status) {
-      case 'approved':
+      case 'completed':
         return <CheckCircle className="w-4 h-4" />;
       case 'rejected':
         return <XCircle className="w-4 h-4" />;
@@ -107,7 +135,7 @@ const SafetySystems: React.FC = () => {
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'approved':
+      case 'completed':
         return 'text-green-600 bg-green-50 border-green-200';
       case 'rejected':
         return 'text-red-600 bg-red-50 border-red-200';
@@ -119,7 +147,7 @@ const SafetySystems: React.FC = () => {
   const getStatusText = (status?: string) => {
     const statusMap: Record<string, string> = {
       pending: 'قيد الانتظار',
-      approved: 'موافق عليه',
+      completed: 'مكتمل',
       rejected: 'مرفوض'
     };
     return status ? statusMap[status] || status : 'غير محدد';
@@ -173,8 +201,7 @@ const SafetySystems: React.FC = () => {
           >
             <option value="all">جميع الحالات</option>
             <option value="pending">قيد الانتظار</option>
-            <option value="approved">موافق عليه</option>
-            <option value="rejected">مرفوض</option>
+            <option value="completed">مكتمل</option>
           </select>
         </div>
       </div>
@@ -220,7 +247,11 @@ const SafetySystems: React.FC = () => {
                   )}
                 </div>
               </th>
-         
+              <th>
+                <div className="flex items-center justify-start gap-1">
+                  الإجراءات
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -238,7 +269,7 @@ const SafetySystems: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <a 
-                      href={system.safetyPlanFile} 
+                      href={getFileUrl(system.safetyPlanFile)} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline flex items-center gap-1"
@@ -253,7 +284,27 @@ const SafetySystems: React.FC = () => {
                       {getStatusText(system.status)}
                     </span>
                   </td>
-          
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {system.status === 'pending' && (
+                      <button
+                        onClick={() => handleUpdateStatus(system._id, system.status)}
+                        disabled={updatingId === system._id}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {updatingId === system._id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                            جاري التحديث...
+                          </>
+                        ) : (
+                          <>
+                            <CheckSquare className="h-4 w-4" />
+                            تم الإكمال
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (

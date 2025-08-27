@@ -19,10 +19,13 @@ import {
   X,
   MapPin,
   Shield,
-  Scale
+  Scale,
+  CheckSquare,
+  Download
 } from 'lucide-react';
-import { getMaintenanceContracts } from '../../api/ServiceForm';
-import { Dialog } from '@headlessui/react';
+import { getMaintenanceContracts, updateMaintenanceContractStatus } from '../../api/ServiceForm';
+import { useNavigate } from 'react-router-dom';
+import { getFileUrl } from '../../utils/fileUrl';
 
 interface ISystem {
   system: string;
@@ -51,7 +54,7 @@ interface IMaintenanceContract {
   planNumber: string;
   area: string;
   systems: ISystem[];
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: 'pending' | 'approved' | 'rejected' | 'completed';
   createdAt: string;
 }
 
@@ -63,9 +66,9 @@ const MaintenanceContractComponent: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{key: keyof IMaintenanceContract; direction: 'asc' | 'desc'} | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const itemsPerPage = 10;
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedContract, setSelectedContract] = useState<IMaintenanceContract | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchContracts = async () => {
@@ -86,6 +89,25 @@ const MaintenanceContractComponent: React.FC = () => {
 
     fetchContracts();
   }, []);
+
+  const handleUpdateStatus = async (id: string, currentStatus: string) => {
+    // تحديد الحالة الجديدة بناءً على الحالة الحالية
+    const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+    
+    setUpdatingId(id);
+    try {
+      await updateMaintenanceContractStatus(id, newStatus);
+      setContracts(prevContracts =>
+        prevContracts.map(contract =>
+          contract._id === id ? { ...contract, status: newStatus } : contract
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء تحديث الحالة');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const filteredContracts = contracts.filter(contract => {
     const matchesSearch = 
@@ -132,8 +154,10 @@ const MaintenanceContractComponent: React.FC = () => {
     switch (status) {
       case 'approved':
         return <CheckCircle className="w-4 h-4" />;
+      case 'completed':
+        return <CheckSquare className="w-4 h-4" />;
       case 'rejected':
-        return <XCircle className="w-4 h-4" />;
+        return <XCircle className="w-4 w-4" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -143,6 +167,8 @@ const MaintenanceContractComponent: React.FC = () => {
     switch (status) {
       case 'approved':
         return 'text-green-600 bg-green-50 border-green-200';
+      case 'completed':
+        return 'text-blue-600 bg-blue-50 border-blue-200';
       case 'rejected':
         return 'text-red-600 bg-red-50 border-red-200';
       default:
@@ -154,6 +180,7 @@ const MaintenanceContractComponent: React.FC = () => {
     const statusMap: Record<string, string> = {
       pending: 'قيد الانتظار',
       approved: 'موافق عليه',
+      completed: 'مكتمل',
       rejected: 'مرفوض'
     };
     return status ? statusMap[status] || status : 'غير محدد';
@@ -180,8 +207,7 @@ const MaintenanceContractComponent: React.FC = () => {
   };
 
   const openContractDetails = (contract: IMaintenanceContract) => {
-    setSelectedContract(contract);
-    setIsModalOpen(true);
+    navigate(`/maintenance-contracts/${contract._id}`);
   };
 
   if (loading) {
@@ -233,6 +259,7 @@ const MaintenanceContractComponent: React.FC = () => {
             <option value="all">جميع الحالات</option>
             <option value="pending">قيد الانتظار</option>
             <option value="approved">موافق عليه</option>
+            <option value="completed">مكتمل</option>
             <option value="rejected">مرفوض</option>
           </select>
         </div>
@@ -260,6 +287,9 @@ const MaintenanceContractComponent: React.FC = () => {
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 التفاصيل
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                الإجراءات
               </th>
             </tr>
           </thead>
@@ -300,11 +330,32 @@ const MaintenanceContractComponent: React.FC = () => {
                       عرض التفاصيل
                     </button>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {contract.status === 'pending' && (
+                      <button
+                        onClick={() => handleUpdateStatus(contract._id, contract.status || 'pending')}
+                        disabled={updatingId === contract._id}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {updatingId === contract._id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                            جاري التحديث...
+                          </>
+                        ) : (
+                          <>
+                            <CheckSquare className="h-4 w-4" />
+                            تم الإكمال
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                   لا توجد بيانات متاحة
                 </td>
               </tr>
@@ -312,115 +363,6 @@ const MaintenanceContractComponent: React.FC = () => {
           </tbody>
         </table>
       </div>
-
-      {/* Details Modal */}
-      <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl">
-            <div className="flex justify-between items-start mb-4">
-              <Dialog.Title className="text-xl font-bold text-gray-900">
-                تفاصيل عقد الصيانة
-              </Dialog.Title>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            {selectedContract && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Column 1 */}
-                <div className="space-y-4">
-                  <div className="border-b pb-4">
-                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                      <HardHat className="h-5 w-5 text-blue-500" />
-                      المعلومات الأساسية
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    <DetailItem icon={<FileDigit />} label="رقم السجل التجاري" value={selectedContract.commercialRegisterNumber} />
-                    <DetailItem icon={<Scale />} label="رقم القطعة" value={selectedContract.pieceNumber} />
-                    <DetailItem icon={<Phone />} label="الهاتف" value={selectedContract.phone} />
-                    <DetailItem icon={<Mail />} label="البريد الإلكتروني" value={selectedContract.email} />
-                    <DetailItem icon={<MapPin />} label="العنوان" value={selectedContract.address} />
-                    <DetailItem icon={<Ruler />} label="المساحة" value={selectedContract.area} />
-                    <DetailItem icon={<FileSearch />} label="رقم المخطط" value={selectedContract.planNumber} />
-                  </div>
-                </div>
-
-                {/* Column 2 */}
-                <div className="space-y-4">
-                  <div className="border-b pb-4">
-                    <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-blue-500" />
-                      معلومات السلامة
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3">
-                    <DetailItem icon={<AlertCircle />} label="نوع الطفايات" value={selectedContract.extinguisherType} />
-                    <DetailItem icon={<Ruler />} label="وزن الطفايات" value={selectedContract.extinguisherWeight} />
-                    <DetailItem icon={<AlertCircle />} label="عدد الطفايات" value={selectedContract.extinguisherCount} />
-                    <DetailItem icon={<Scale />} label="رقم الضريبة" value={selectedContract.vatNumber} />
-                    
-                    <div className="mt-4">
-                      <h4 className="font-medium text-gray-900 mb-2">أنظمة الحماية:</h4>
-                      <ul className="space-y-2">
-                        {selectedContract.systems.map((system, index) => (
-                          <li key={index} className="flex items-center gap-2">
-                            <span className="font-medium">{system.system}:</span>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              system.status === 'working' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {system.status === 'working' ? 'يعمل' : 'لا يعمل'}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium text-gray-900 mb-2">المستندات المرفقة:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedContract.maintenanceContract && (
-                        <DocumentLink 
-                          url={selectedContract.maintenanceContract} 
-                          label="عقد الصيانة" 
-                        />
-                      )}
-                      {selectedContract.rentContract && (
-                        <DocumentLink 
-                          url={selectedContract.rentContract} 
-                          label="عقد الإيجار" 
-                        />
-                      )}
-                      {selectedContract.commercialRegisterFile && (
-                        <DocumentLink 
-                          url={selectedContract.commercialRegisterFile} 
-                          label="السجل التجاري" 
-                        />
-                      )}
-                      {selectedContract.buildingLicense && (
-                        <DocumentLink 
-                          url={selectedContract.buildingLicense} 
-                          label="رخصة البناء" 
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </Dialog.Panel>
-        </div>
-      </Dialog>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -519,31 +461,5 @@ const MaintenanceContractComponent: React.FC = () => {
     </div>
   );
 };
-
-// Helper component for detail items
-const DetailItem: React.FC<{ icon: React.ReactNode, label: string, value: string }> = ({ icon, label, value }) => (
-  <div className="flex items-start gap-3">
-    <div className="text-gray-500 mt-0.5">
-      {React.cloneElement(icon as React.ReactElement, { className: 'h-4 w-4' })}
-    </div>
-    <div>
-      <div className="text-sm font-medium text-gray-500">{label}</div>
-      <div className="text-sm text-gray-900 mt-1">{value || 'غير متوفر'}</div>
-    </div>
-  </div>
-);
-
-// Helper component for document links
-const DocumentLink: React.FC<{ url: string, label: string }> = ({ url, label }) => (
-  <a
-    href={url}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm"
-  >
-    <FileText className="h-4 w-4" />
-    {label}
-  </a>
-);
 
 export default MaintenanceContractComponent;

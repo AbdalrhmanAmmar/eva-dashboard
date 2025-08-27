@@ -10,6 +10,7 @@ export interface IContactForm {
     PhoneNumber: string;
     Details: string;
     OrderForm?: number; 
+    createdAt?: Date;
 }
 export interface IGetContactFormResponse {
   success: boolean;

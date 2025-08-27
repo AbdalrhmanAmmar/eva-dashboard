@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -19,40 +19,41 @@ const customIcon = new L.Icon({
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 interface InteractiveMapProps {
-  coordinates: { lat: number; lng: number };
+  coordinates: { lat: number | null; lng: number | null };
   address: string;
   onLocationChange: (lat: number, lng: number) => void;
 }
 
-// مكون لتحديث موقع الخريطة
-const MapUpdater: React.FC<{ coordinates: { lat: number; lng: number } }> = ({ coordinates }) => {
+// 🔹 مكون لتحديث موقع الخريطة عند تغيير الإحداثيات
+const MapUpdater: React.FC<{ coordinates: { lat: number | null; lng: number | null } }> = ({ coordinates }) => {
   const map = useMap();
-  
+
   useEffect(() => {
-    if (coordinates.lat && coordinates.lng) {
+    if (coordinates.lat !== null && coordinates.lng !== null) {
+      console.log("📍 Updating map center:", coordinates.lat, coordinates.lng);
       map.setView([coordinates.lat, coordinates.lng], 15);
     }
   }, [coordinates, map]);
-  
+
   return null;
 };
 
-// مكون للتعامل مع النقر على الخريطة
+// 🔹 مكون للتعامل مع النقر أو سحب الدبوس
 const LocationMarker: React.FC<{
-  coordinates: { lat: number; lng: number };
+  coordinates: { lat: number | null; lng: number | null };
   address: string;
   onLocationChange: (lat: number, lng: number) => void;
 }> = ({ coordinates, address, onLocationChange }) => {
   const [position, setPosition] = useState<[number, number] | null>(
-    coordinates.lat && coordinates.lng ? [coordinates.lat, coordinates.lng] : null
+    coordinates.lat !== null && coordinates.lng !== null ? [coordinates.lat, coordinates.lng] : null
   );
 
   useEffect(() => {
-    if (coordinates.lat && coordinates.lng) {
+    if (coordinates.lat !== null && coordinates.lng !== null) {
       setPosition([coordinates.lat, coordinates.lng]);
     }
   }, [coordinates]);
@@ -66,16 +67,16 @@ const LocationMarker: React.FC<{
   });
 
   return position === null ? null : (
-    <Marker 
-      position={position} 
+    <Marker
+      position={position}
       icon={customIcon}
       draggable={true}
       eventHandlers={{
         dragend: (e) => {
           const marker = e.target;
-          const position = marker.getLatLng();
-          setPosition([position.lat, position.lng]);
-          onLocationChange(position.lat, position.lng);
+          const pos = marker.getLatLng();
+          setPosition([pos.lat, pos.lng]);
+          onLocationChange(pos.lat, pos.lng);
         },
       }}
     >
@@ -96,18 +97,16 @@ const LocationMarker: React.FC<{
   );
 };
 
-const InteractiveMap: React.FC<InteractiveMapProps> = ({ 
-  coordinates, 
-  address, 
-  onLocationChange 
-}) => {
+// 🔹 المكون الرئيسي للخريطة
+const InteractiveMap: React.FC<InteractiveMapProps> = ({ coordinates, address, onLocationChange }) => {
   const defaultCenter: [number, number] = [24.7136, 46.6753]; // الرياض كموقع افتراضي
 
   return (
     <div className="w-full h-full rounded-xl overflow-hidden border border-border shadow-soft">
       <MapContainer
-        center={coordinates.lat && coordinates.lng ? [coordinates.lat, coordinates.lng] : defaultCenter}
-        zoom={coordinates.lat && coordinates.lng ? 15 : 6}
+        key={`${coordinates.lat}-${coordinates.lng}`} // ✅ مهم لإعادة بناء الخريطة عند تغيير العنوان
+        center={coordinates.lat !== null && coordinates.lng !== null ? [coordinates.lat, coordinates.lng] : defaultCenter}
+        zoom={coordinates.lat !== null && coordinates.lng !== null ? 15 : 6}
         style={{ height: '100%', width: '100%' }}
         className="rounded-xl"
       >
@@ -115,10 +114,10 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        
+
         <MapUpdater coordinates={coordinates} />
-        
-        <LocationMarker 
+
+        <LocationMarker
           coordinates={coordinates}
           address={address}
           onLocationChange={onLocationChange}

@@ -30,6 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [warehouseDropdownOpen, setWarehouseDropdownOpen] = useState(false);
+  const [productsDropdownOpen, setProductsDropdownOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
   const menuItems = [
@@ -39,14 +40,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { icon: TrendingUp, label: t('sidebar.metaAnalytics'), path: '/meta-analytics' },
     { icon: MessageSquare, label: t('sidebar.messages'), path: '/messages' },
     { icon: Smartphone, label: t('sidebar.smsMessages'), path: '/sms-messages' },
-    { icon: FileText, label: t('sidebar.servicesForm'), path: '/services-form' },
-    { icon: Package, label: t('sidebar.inventoryManagement'), path: '/inventory-management' }
+    { icon: FileText, label: t('sidebar.servicesForm'), path: '/services-form' }
   ];
 
   const warehouseItems = [
     { icon: Warehouse, label: t('sidebar.viewWarehouses'), path: '/warehouse-management' },
     { icon: ArrowUpDown, label: t('sidebar.priority'), path: '/warehouse-priority' },
     { icon: Plus, label: t('sidebar.addWarehouse'), path: '/warehouse-create' }
+  ];
+
+  const productItems = [
+    { icon: Package, label: t('sidebar.viewProducts'), path: '/product-management' },
+    { icon: Plus, label: t('sidebar.addProduct'), path: '/product-create' }
   ];
 
   const otherItems = [
@@ -145,6 +150,55 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
             {!isCollapsed && warehouseDropdownOpen && (
               <ul className="mt-2 space-y-1 pl-6">
                 {warehouseItems.map((item, index) => (
+                  <li key={index}>
+                    <button
+                      onClick={() => navigate(item.path)}
+                      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 group w-full ${
+                        i18n.dir() === 'rtl' ? 'text-right' : 'text-left'
+                      } text-sm ${
+                        location.pathname === item.path
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                      }`}
+                    >
+                      <item.icon className={`w-4 h-4 ${i18n.dir() === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                      <span className="font-medium">{item.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+          
+          {/* Products Dropdown */}
+          <li>
+            <button
+              onClick={() => !isCollapsed && setProductsDropdownOpen(!productsDropdownOpen)}
+              className={`flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-200 group w-full ${
+                i18n.dir() === 'rtl' ? 'text-right' : 'text-left'
+              } ${
+                location.pathname.includes('/product') 
+                  ? 'bg-gradient-primary text-white shadow-soft'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              }`}
+            >
+              <div className="flex items-center">
+                <Package className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
+                {!isCollapsed && (
+                  <span className="font-medium">{t('sidebar.products')}</span>
+                )}
+              </div>
+              {!isCollapsed && (
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                  productsDropdownOpen ? 'rotate-180' : ''
+                }`} />
+              )}
+            </button>
+            
+            {/* Dropdown Items */}
+            {!isCollapsed && productsDropdownOpen && (
+              <ul className="mt-2 space-y-1 pl-6">
+                {productItems.map((item, index) => (
                   <li key={index}>
                     <button
                       onClick={() => navigate(item.path)}

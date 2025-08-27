@@ -1,4 +1,4 @@
-import api from "./auth";
+import api from "./api";
 
 // نوع العنصر داخل الجرد (داخل InventoryCount)
 export interface InventoryItem {

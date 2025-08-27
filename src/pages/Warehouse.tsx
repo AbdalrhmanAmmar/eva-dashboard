@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getAllWarehouses, updateWarehouse, Warehouse } from '../api/warehouseAPI';
+import { Switch } from '../components/ui/switch';
 
 const WarehousePage: React.FC = () => {
   const navigate = useNavigate();
@@ -329,6 +330,8 @@ const WarehousePage: React.FC = () => {
               أصل <span className="font-bold text-white">{totalCount}</span>
             </p>
           </div>
+
+          
           <div className="mr-auto flex items-center gap-6">
             <div className="text-center">
               <div className="text-2xl font-bold">{activeCount}</div>
@@ -392,43 +395,38 @@ const WarehousePage: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
-                        checked={warehouse.isActive}
-                        onChange={(e) => toggleActiveStatus(warehouse._id!, e.target.checked)}
+                      <td className="px-6 py-4 whitespace-nowrap text-ring">
+                    <Switch
+                      checked={warehouse.isActive}
+                      onChange={(checked) => toggleActiveStatus(warehouse._id!, checked)}
+                      className={`${
+                        warehouse.isActive ? 'bg-indigo-600' : 'bg-gray-200'
+                      } relative inline-flex h-6 w-11 items-center rounded-full`}
+                    >
+                      <span className="sr-only">تفعيل/تعطيل</span>
+                      <span
+                        className={`${
+                          warehouse.isActive ? 'translate-x-6' : 'translate-x-1'
+                        } inline-block h-4 w-4 transform rounded-full bg-white transition`}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                      <span className="mr-3 text-sm font-medium text-foreground">
-                        {warehouse.isActive ? (
-                          <span className="text-green-600 flex items-center gap-1">
-                            <Activity className="w-4 h-4" />
-                            نشط
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">غير نشط</span>
-                        )}
-                      </span>
-                    </label>
+                    </Switch>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => openEditModal(warehouse)}
+                        onClick={() => navigate(`/edit-warehouse/${warehouse._id}`)}
                         className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
                         title="تعديل المخزن"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button
+                      {/* <button
                         onClick={() => navigate(`/warehouse/details/${warehouse._id}`)}
                         className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors"
                         title="عرض التفاصيل"
                       >
                         <BarChart3 className="w-4 h-4" />
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>

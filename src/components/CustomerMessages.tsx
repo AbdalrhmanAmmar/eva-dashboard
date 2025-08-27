@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, RefreshCw, Phone, User } from 'lucide-react';
 import { useMessages } from '../context/messages.context';
 import { getContactForm, IContactForm, IContactFormResponse } from '../api/contactForm';
+import { formatArabicDate } from '../utils/formatDate';
 
 const CustomerMessages: React.FC = () => {
   const { updateMessagesCount, messagesCount } = useMessages();
@@ -83,6 +84,7 @@ const CustomerMessages: React.FC = () => {
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم الهاتف</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التفاصيل</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم الطلب</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">تاريخ الطلب</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -131,6 +133,9 @@ const CustomerMessages: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {message.OrderForm ? `ORD-${message.OrderForm}` : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatArabicDate(message.createdAt)}
                   </td>
                 </tr>
               ))

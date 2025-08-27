@@ -8,6 +8,10 @@
     "servicesForm": "فورم الخدمات",
     "inventoryManagement": "إدارة الكميات",
     "warehouses": "المخازن",
+    "products": "المنتجات",
+    "viewProducts": "عرض المنتجات",
+    "addProduct": "إضافة منتج",
+   
     "viewWarehouses": "عرض المخازن",
     "priority": "أولوية السحب",
     "addWarehouse": "إضافة مخزن",

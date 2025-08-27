@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-
   ChevronUp, 
   ChevronDown, 
   Search,
@@ -9,9 +8,11 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  FileText
+  FileText,
+  CheckSquare
 } from 'lucide-react';
-import { getAllsafetyplans, getrehabilitation } from '../../api/ServiceForm';
+import { getAllsafetyplans, updateStatusSafetyPlans } from '../../api/safetyplan';
+import { getFileUrl } from '../../utils/fileUrl';
 
 interface Isafetyplans {
   _id: string;
@@ -20,9 +21,10 @@ interface Isafetyplans {
   address: string;
   ownerId: string;
   autocadFile: string;
-  buildingLicense:string;
+  buildingLicense: string;
   status?: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  activity?: string; // إضافة هذا الحقل إذا كان موجودًا في البيانات
 }
 
 const SystemRehabilitation: React.FC = () => {
@@ -33,6 +35,7 @@ const SystemRehabilitation: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortConfig, setSortConfig] = useState<{key: keyof Isafetyplans; direction: 'asc' | 'desc'} | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [updatingId, setUpdatingId] = useState<string | null>(null); // إضافة حالة لتتبع التحديث
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -41,7 +44,7 @@ const SystemRehabilitation: React.FC = () => {
         setLoading(true);
         const response = await getAllsafetyplans();
         // تعيين حالة افتراضية إذا لم تكن موجودة
-        const plansWithStatus = response.data.map(plan => ({
+        const plansWithStatus = response.data.map((plan: Isafetyplans) => ({
           ...plan,
           status: plan.status || 'pending'
         }));
@@ -56,12 +59,31 @@ const SystemRehabilitation: React.FC = () => {
     fetchPlans();
   }, []);
 
+  const handleUpdateStatus = async (id: string, currentStatus: 'pending' | 'approved' | 'rejected' | undefined) => {
+    // تحديد الحالة الجديدة بناءً على الحالة الحالية
+    const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+    
+    setUpdatingId(id);
+    try {
+      await updateStatusSafetyPlans(id, newStatus);
+      setPlans(prevPlans =>
+        prevPlans.map(plan =>
+          plan._id === id ? { ...plan, status: newStatus } : plan
+        )
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء تحديث الحالة');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   // تصفية البيانات حسب حالة البحث والفلتر
   const filteredPlans = plans.filter(plan => {
     const matchesSearch = 
       plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       plan.phone.includes(searchTerm) ||
-      plan.activity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (plan.activity && plan.activity.toLowerCase().includes(searchTerm.toLowerCase())) ||
       plan.address.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || plan.status === statusFilter;
@@ -74,10 +96,14 @@ const SystemRehabilitation: React.FC = () => {
     if (!sortConfig) return filteredPlans;
 
     return [...filteredPlans].sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
+      // التعامل مع القيم غير المعرفة
+      const aValue = a[sortConfig.key] || '';
+      const bValue = b[sortConfig.key] || '';
+      
+      if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
+      if (aValue > bValue) {
         return sortConfig.direction === 'asc' ? 1 : -1;
       }
       return 0;
@@ -91,7 +117,7 @@ const SystemRehabilitation: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  const requestSort = (key: keyof IEngineeringPlan) => {
+  const requestSort = (key: keyof Isafetyplans) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -211,42 +237,21 @@ const SystemRehabilitation: React.FC = () => {
                   )}
                 </div>
               </th>
-              <th 
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => requestSort('phone')}
-              >
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center justify-start gap-1">
                   ملف الاوتوكاد
-                  {sortConfig?.key === 'phone' && (
-                    sortConfig.direction === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                  )}
                 </div>
               </th>
-              <th 
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => requestSort('phone')}
-              >
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center justify-start gap-1">
-                  رخصه بناء
-                  {sortConfig?.key === 'phone' && (
-                    sortConfig.direction === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                  )}
+                  رخصة بناء
                 </div>
               </th>
-              <th 
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => requestSort('phone')}
-              >
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center justify-start gap-1">
-                  هويه المالك
-                  {sortConfig?.key === 'phone' && (
-                    sortConfig.direction === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                  )}
+                  هوية المالك
                 </div>
               </th>
-         
-        
-    
               <th 
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                 onClick={() => requestSort('status')}
@@ -258,7 +263,9 @@ const SystemRehabilitation: React.FC = () => {
                   )}
                 </div>
               </th>
-       
+              <th>
+                <div className='flex items-center justify-start gap-1'>الإجراءات</div>
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -274,32 +281,31 @@ const SystemRehabilitation: React.FC = () => {
                       {plan.phone}
                     </div>
                   </td>
-            
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                               <a 
-                                 href={plan.autocadFile} 
-                                 target="_blank" 
-                                 rel="noopener noreferrer"
-                                 className="text-blue-600 hover:underline flex items-center gap-1"
-                               >
-                                 <FileText className="h-4 w-4" />
-                                 عرض الملف
-                               </a>
-                             </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                             <a 
-                               href={plan.buildingLicense} 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               className="text-blue-600 hover:underline flex items-center gap-1"
-                             >
-                               <FileText className="h-4 w-4" />
-                               عرض رخصه البناء
-                             </a>
-                           </td>
-                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <a 
-                      href={plan.ownerId} 
+                      href={getFileUrl(plan.autocadFile)} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <FileText className="h-4 w-4" />
+                      عرض الملف
+                    </a>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <a 
+                      href={getFileUrl(plan.buildingLicense)} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <FileText className="h-4 w-4" />
+                      عرض رخصة البناء
+                    </a>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <a 
+                      href={getFileUrl(plan.ownerId)} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline flex items-center gap-1"
@@ -308,20 +314,45 @@ const SystemRehabilitation: React.FC = () => {
                       عرض الهوية
                     </a>
                   </td>
-    
-                 
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border ${getStatusColor(plan.status)}`}>
-                      {getStatusIcon(plan.status)}
-                      {getStatusText(plan.status)}
-                    </span>
+                {plan.status === 'pending' ? (
+                      <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border ${getStatusColor(plan.status)}`}>
+                        قيد الانتظار
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full border text-blue-600 bg-blue-50 border-blue-200`}>
+                        مكتمل
+                      </span>
+                    )}
                   </td>
-                
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      {plan.status === 'pending' && (
+                        <button
+                          onClick={() => handleUpdateStatus(plan._id, plan.status)}
+                          disabled={updatingId === plan._id}
+                          className="text-blue-600 hover:text-blue-900 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {updatingId === plan._id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500"></div>
+                              جاري التحديث...
+                            </>
+                          ) : (
+                            <>
+                              <CheckSquare className="h-4 w-4" />
+                              تم الإكمال
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                   لا توجد بيانات متاحة
                 </td>
               </tr>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   MapPin, 
   Building, 
@@ -12,12 +12,13 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
-import { createWarehouse } from '../api/warehouseAPI';
 import { toast } from 'react-toastify';
-import InteractiveMap from '../components/InteractiveMap';
+import InteractiveMap from '../../components/InteractiveMap';
+import { updateWarehouse,getWarehouseById } from '../../api/warehouseAPI';
 
-const CreateWarehouse: React.FC = () => {
+const WarehouseEdit: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
     name: "",
     country: "",
@@ -37,6 +38,49 @@ const CreateWarehouse: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const [error, setError] = useState("");
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      fetchWarehouseData();
+      console.log(formData)
+    }
+  }, [id]);
+
+  const fetchWarehouseData = async () => {
+    try {
+      setInitialLoading(true);
+      const warehouse = await getWarehouseById(id);
+      
+      setFormData({
+        name: warehouse.name || "",
+        country: warehouse.country || "",
+        city: warehouse.city || "",
+        district: warehouse.district || "",
+        street: warehouse.street || "",
+        phoneNum: warehouse.phoneNum || "",
+        Buildingnumber: warehouse.Buildingnumber || "",
+        maplink: warehouse.maplink || ""
+      });
+
+      if (warehouse.latitude && warehouse.longitude) {
+        setCoordinates({
+          lat: warehouse.latitude,
+          lng: warehouse.longitude
+        });
+      } else if (warehouse.maplink) {
+        extractCoordinatesFromLink(warehouse.maplink);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "فشل في تحميل بيانات المخزن", {
+        position: 'top-right',
+        autoClose: 5000,
+      });
+      navigate('/warehouse');
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -83,38 +127,39 @@ const CreateWarehouse: React.FC = () => {
       setFetchingLocation(false);
     }
   };
-const extractCoordinatesFromLink = (link: string) => {
-  try {
-    let lat: number | null = null;
-    let lng: number | null = null;
 
-    // ✅ Google Maps format: https://www.google.com/maps/place/.../@24.7136,46.6753,17z
-    const googleRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const googleMatch = link.match(googleRegex);
-    if (googleMatch) {
-      lat = parseFloat(googleMatch[1]);
-      lng = parseFloat(googleMatch[2]);
-    }
+  const extractCoordinatesFromLink = (link: string) => {
+    try {
+      let lat: number | null = null;
+      let lng: number | null = null;
 
-    // ✅ OpenStreetMap format: https://www.openstreetmap.org/?mlat=24.7136&mlon=46.6753
-    const osmRegex = /mlat=(-?\d+\.\d+)&mlon=(-?\d+\.\d+)/;
-    const osmMatch = link.match(osmRegex);
-    if (osmMatch) {
-      lat = parseFloat(osmMatch[1]);
-      lng = parseFloat(osmMatch[2]);
-    }
+      // ✅ Google Maps format: https://www.google.com/maps/place/.../@24.7136,46.6753,17z
+      const googleRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const googleMatch = link.match(googleRegex);
+      if (googleMatch) {
+        lat = parseFloat(googleMatch[1]);
+        lng = parseFloat(googleMatch[2]);
+      }
 
-    if (lat !== null && lng !== null) {
-      setCoordinates({ lat, lng });
-      toast.success("📍 تم جلب الموقع من الرابط بنجاح!");
-    } else {
-      toast.error("❌ الرابط غير صالح. برجاء إدخال رابط صحيح من الخريطة.");
+      // ✅ OpenStreetMap format: https://www.openstreetmap.org/?mlat=24.7136&mlon=46.6753
+      const osmRegex = /mlat=(-?\d+\.\d+)&mlon=(-?\d+\.\d+)/;
+      const osmMatch = link.match(osmRegex);
+      if (osmMatch) {
+        lat = parseFloat(osmMatch[1]);
+        lng = parseFloat(osmMatch[2]);
+      }
+
+      if (lat !== null && lng !== null) {
+        setCoordinates({ lat, lng });
+        toast.success("📍 تم جلب الموقع من الرابط بنجاح!");
+      } else {
+        toast.error("❌ الرابط غير صالح. برجاء إدخال رابط صحيح من الخريطة.");
+      }
+    } catch (err) {
+      console.error("Error parsing map link:", err);
+      toast.error("❌ فشل في قراءة الرابط.");
     }
-  } catch (err) {
-    console.error("Error parsing map link:", err);
-    toast.error("❌ فشل في قراءة الرابط.");
-  }
-};
+  };
 
   // تحديث الإحداثيات عند تغيير العنوان
   useEffect(() => {
@@ -137,33 +182,21 @@ const extractCoordinatesFromLink = (link: string) => {
         longitude: coordinates.lng
       };
       
-      const response = await createWarehouse(data);
+      const response = await updateWarehouse(id!, data);
       
-      toast.success('تم إنشاء المخزن بنجاح!', {
+      toast.success('تم تحديث المخزن بنجاح!', {
         position: 'top-right',
         autoClose: 3000,
       });
 
-      // إعادة تعيين النموذج
-      setFormData({
-        name: "",
-        country: "",
-        city: "",
-        district: "",
-        street: "",
-        phoneNum: "",
-        Buildingnumber: "",
-      });
-      setCoordinates({ lat: null, lng: null });
-      
       // العودة إلى صفحة المخازن
       setTimeout(() => {
         navigate('/warehouse');
       }, 1500);
       
     } catch (err: any) {
-      setError(err.message || "فشل في إنشاء المخزن");
-      toast.error(err.message || "فشل في إنشاء المخزن", {
+      setError(err.message || "فشل في تحديث المخزن");
+      toast.error(err.message || "فشل في تحديث المخزن", {
         position: 'top-right',
         autoClose: 5000,
       });
@@ -173,6 +206,15 @@ const extractCoordinatesFromLink = (link: string) => {
   };
 
   const fullAddress = `${formData.Buildingnumber} ${formData.street}, ${formData.district}, ${formData.city}, ${formData.country}`.trim();
+
+  if (initialLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <span className="mr-3 text-muted-foreground">جاري تحميل بيانات المخزن...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -186,8 +228,8 @@ const extractCoordinatesFromLink = (link: string) => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gradient">إنشاء مخزن جديد</h1>
-            <p className="text-muted-foreground mt-2">أضف مخزن جديد إلى النظام مع تحديد الموقع على الخريطة</p>
+            <h1 className="text-3xl font-bold text-gradient">تعديل المخزن</h1>
+            <p className="text-muted-foreground mt-2">قم بتعديل بيانات المخزن وتحديث موقعه على الخريطة</p>
           </div>
         </div>
       </div>
@@ -299,8 +341,6 @@ const extractCoordinatesFromLink = (link: string) => {
                   />
                 </div>
 
-                
-
                 <div>
                   <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                     <Phone className="w-4 h-4 text-primary" />
@@ -319,25 +359,26 @@ const extractCoordinatesFromLink = (link: string) => {
               </div>
             </div>
 
+            <div>
               <label className="block text-sm font-medium mb-2">رابط الخريطة</label>
-  <div className="flex gap-2">
-    <input
-      type="text"
-      name="mapLink"
-      value={formData.mapLink}
-      onChange={handleChange}
-      placeholder="ألصق رابط من Google Maps أو OpenStreetMap"
-      className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-    />
-    <button
-      type="button"
-      onClick={() => extractCoordinatesFromLink(formData.mapLink)}
-      className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
-    >
-      جلب
-    </button>
-  </div>
-            
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  name="maplink"
+                  value={formData.maplink}
+                  onChange={handleChange}
+                  placeholder="ألصق رابط من Google Maps أو OpenStreetMap"
+                  className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => extractCoordinatesFromLink(formData.maplink)}
+                  className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
+                >
+                  جلب
+                </button>
+              </div>
+            </div>
 
             {/* رسائل الخطأ */}
             {error && (
@@ -357,19 +398,19 @@ const extractCoordinatesFromLink = (link: string) => {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    جاري الإنشاء...
+                    جاري التحديث...
                   </>
                 ) : (
                   <>
                     <Save className="w-5 h-5" />
-                    إنشاء المخزن
+                    حفظ التغييرات
                   </>
                 )}
               </button>
               
               <button
                 type="button"
-                onClick={() => navigate('/warehouse-management')}
+                onClick={() => navigate('/warehouse')}
                 className="px-6 py-3 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors"
               >
                 إلغاء
@@ -412,6 +453,7 @@ const extractCoordinatesFromLink = (link: string) => {
               </div>
             )}
           </div>
+          
 
           {/* معلومات إضافية */}
           <div className="mt-6 space-y-3">
@@ -453,13 +495,10 @@ const extractCoordinatesFromLink = (link: string) => {
               </div>
             )}
           </div>
-          <div>
-            <h1></h1>
-          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default CreateWarehouse;
+export default WarehouseEdit;

@@ -284,9 +284,7 @@ const TechnicalReportImmediate: React.FC = () => {
                   )}
                 </div>
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                العنوان
-              </th>
+        
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 أدوات السلامة
               </th>
@@ -301,6 +299,15 @@ const TechnicalReportImmediate: React.FC = () => {
                   )}
                 </div>
               </th>
+              <th 
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                onClick={() => requestSort('status')}
+              >
+                <div className="flex items-center justify-start gap-1">
+                  التفاصيل
+                
+                </div>
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 إجراءات
               </th>
@@ -312,7 +319,7 @@ const TechnicalReportImmediate: React.FC = () => {
                 <tr 
   key={request._id} 
   className="hover:bg-gray-50 cursor-pointer"
-  onClick={() => navigate(`/safety-requests/${request._id}`)}
+
 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {request.nameService}
@@ -332,12 +339,7 @@ const TechnicalReportImmediate: React.FC = () => {
                       {request.commercialRegisterNumber}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      {request.city} - {request.neighborhood}
-                    </div>
-                  </td>
+     
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1">
@@ -359,6 +361,15 @@ const TechnicalReportImmediate: React.FC = () => {
                       {getStatusIcon(request.status)}
                       {getStatusText(request.status)}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                                        onClick={() => navigate(`/safety-requests/${request._id}`)}
+                                       className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                     >
+                                       <Eye className="h-4 w-4" />
+                                       عرض التفاصيل
+                                     </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {request.status === 'pending' && (
