@@ -10,8 +10,7 @@ import {
   X,
   Building,
   MapPin,
-  Activity,
-  BarChart3
+
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getAllWarehouses, updateWarehouse, Warehouse } from '../api/warehouseAPI';
@@ -24,13 +23,7 @@ const WarehousePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentWarehouse, setCurrentWarehouse] = useState<Warehouse | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    name: '',
-    country: '',
-    city: '',
-    district: '',
-    street: ''
-  });
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -75,52 +68,14 @@ const WarehousePage: React.FC = () => {
     }
   };
 
-  const openEditModal = (warehouse: Warehouse) => {
-    setCurrentWarehouse(warehouse);
-    setEditFormData({
-      name: warehouse.name,
-      country: warehouse.country,
-      city: warehouse.city,
-      district: warehouse.district,
-      street: warehouse.street
-    });
-    setIsEditModalOpen(true);
-  };
+
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setCurrentWarehouse(null);
   };
 
-  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setEditFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentWarehouse) return;
-
-    try {
-      const response = await updateWarehouse(currentWarehouse._id, editFormData);
-      
-      if (response.success) {
-        setWarehouses(prev =>
-          prev.map(wh =>
-            wh._id === currentWarehouse._id ? { ...wh, ...editFormData } : wh
-          )
-        );
-        closeEditModal();
-      } else {
-        throw new Error(response.message || 'فشل في تحديث المخزن');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ أثناء التحديث');
-    }
-  };
 
   const activeCount = warehouses.filter(wh => wh.isActive).length;
   const totalCount = warehouses.length;
@@ -165,95 +120,7 @@ const WarehousePage: React.FC = () => {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-                    اسم المخزن
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={editFormData.name}
-                    onChange={handleEditFormChange}
-                    className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-foreground mb-2">
-                    الدولة
-                  </label>
-                  <input
-                    type="text"
-                    id="country"
-                    name="country"
-                    value={editFormData.country}
-                    onChange={handleEditFormChange}
-                    className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-foreground mb-2">
-                    المدينة
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={editFormData.city}
-                    onChange={handleEditFormChange}
-                    className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="district" className="block text-sm font-medium text-foreground mb-2">
-                    المنطقة
-                  </label>
-                  <input
-                    type="text"
-                    id="district"
-                    name="district"
-                    value={editFormData.district}
-                    onChange={handleEditFormChange}
-                    className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="street" className="block text-sm font-medium text-foreground mb-2">
-                    الشارع
-                  </label>
-                  <input
-                    type="text"
-                    id="street"
-                    name="street"
-                    value={editFormData.street}
-                    onChange={handleEditFormChange}
-                    className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="px-4 py-2 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="btn-gradient flex items-center gap-2"
-                >
-                  حفظ التغييرات
-                </button>
-              </div>
-            </form>
+   
           </div>
         </div>
       )}
