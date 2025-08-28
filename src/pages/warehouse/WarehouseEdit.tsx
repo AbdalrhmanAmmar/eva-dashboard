@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import InteractiveMap from '../../components/InteractiveMap';
-import { updateWarehouse,getWarehouseById } from '../../api/warehouseAPI';
+import { updateWarehouse, getWarehouseById } from '../../api/warehouseAPI';
 
 const WarehouseEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -26,8 +26,7 @@ const WarehouseEdit: React.FC = () => {
     district: "",
     street: "",
     phoneNum: "",
-    Buildingnumber: "",
-    maplink: ""
+    Buildingnumber: ""
   });
   
   const [coordinates, setCoordinates] = useState<{ lat: number | null; lng: number | null }>({ 
@@ -43,14 +42,18 @@ const WarehouseEdit: React.FC = () => {
   useEffect(() => {
     if (id) {
       fetchWarehouseData();
-      console.log(formData)
     }
   }, [id]);
 
   const fetchWarehouseData = async () => {
     try {
       setInitialLoading(true);
-      const warehouse = await getWarehouseById(id);
+      const response = await getWarehouseById(id);
+      
+      // تأكد من أن response يحتوي على بيانات المخزن
+      const warehouse = response.warehouse || response;
+      
+      console.log("بيانات المخزن المستلمة:", warehouse);
       
       setFormData({
         name: warehouse.name || "",
@@ -60,7 +63,6 @@ const WarehouseEdit: React.FC = () => {
         street: warehouse.street || "",
         phoneNum: warehouse.phoneNum || "",
         Buildingnumber: warehouse.Buildingnumber || "",
-        maplink: warehouse.maplink || ""
       });
 
       if (warehouse.latitude && warehouse.longitude) {
@@ -68,15 +70,19 @@ const WarehouseEdit: React.FC = () => {
           lat: warehouse.latitude,
           lng: warehouse.longitude
         });
-      } else if (warehouse.maplink) {
-        extractCoordinatesFromLink(warehouse.maplink);
+      } else if (warehouse.lat && warehouse.lng) {
+        setCoordinates({
+          lat: warehouse.lat,
+          lng: warehouse.lng
+        });
       }
     } catch (err: any) {
+      console.error("خطأ في جلب البيانات:", err);
       toast.error(err.message || "فشل في تحميل بيانات المخزن", {
         position: 'top-right',
         autoClose: 5000,
       });
-      navigate('/warehouse');
+      navigate('/warehouse-management');
     } finally {
       setInitialLoading(false);
     }
@@ -128,39 +134,6 @@ const WarehouseEdit: React.FC = () => {
     }
   };
 
-  const extractCoordinatesFromLink = (link: string) => {
-    try {
-      let lat: number | null = null;
-      let lng: number | null = null;
-
-      // ✅ Google Maps format: https://www.google.com/maps/place/.../@24.7136,46.6753,17z
-      const googleRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-      const googleMatch = link.match(googleRegex);
-      if (googleMatch) {
-        lat = parseFloat(googleMatch[1]);
-        lng = parseFloat(googleMatch[2]);
-      }
-
-      // ✅ OpenStreetMap format: https://www.openstreetmap.org/?mlat=24.7136&mlon=46.6753
-      const osmRegex = /mlat=(-?\d+\.\d+)&mlon=(-?\d+\.\d+)/;
-      const osmMatch = link.match(osmRegex);
-      if (osmMatch) {
-        lat = parseFloat(osmMatch[1]);
-        lng = parseFloat(osmMatch[2]);
-      }
-
-      if (lat !== null && lng !== null) {
-        setCoordinates({ lat, lng });
-        toast.success("📍 تم جلب الموقع من الرابط بنجاح!");
-      } else {
-        toast.error("❌ الرابط غير صالح. برجاء إدخال رابط صحيح من الخريطة.");
-      }
-    } catch (err) {
-      console.error("Error parsing map link:", err);
-      toast.error("❌ فشل في قراءة الرابط.");
-    }
-  };
-
   // تحديث الإحداثيات عند تغيير العنوان
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -182,6 +155,8 @@ const WarehouseEdit: React.FC = () => {
         longitude: coordinates.lng
       };
       
+      console.log("بيانات التحديث المرسلة:", data);
+      
       const response = await updateWarehouse(id!, data);
       
       toast.success('تم تحديث المخزن بنجاح!', {
@@ -191,7 +166,7 @@ const WarehouseEdit: React.FC = () => {
 
       // العودة إلى صفحة المخازن
       setTimeout(() => {
-        navigate('/warehouse');
+        navigate('/warehouse-management');
       }, 1500);
       
     } catch (err: any) {
@@ -222,7 +197,7 @@ const WarehouseEdit: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/warehouse')}
+            onClick={() => navigate('/warehouse-management')}
             className="p-2 hover:bg-secondary rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -359,27 +334,6 @@ const WarehouseEdit: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">رابط الخريطة</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  name="maplink"
-                  value={formData.maplink}
-                  onChange={handleChange}
-                  placeholder="ألصق رابط من Google Maps أو OpenStreetMap"
-                  className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-                />
-                <button
-                  type="button"
-                  onClick={() => extractCoordinatesFromLink(formData.maplink)}
-                  className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
-                >
-                  جلب
-                </button>
-              </div>
-            </div>
-
             {/* رسائل الخطأ */}
             {error && (
               <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -410,7 +364,7 @@ const WarehouseEdit: React.FC = () => {
               
               <button
                 type="button"
-                onClick={() => navigate('/warehouse')}
+                onClick={() => navigate('/warehouse-management')}
                 className="px-6 py-3 bg-secondary text-foreground rounded-lg hover:bg-secondary/80 transition-colors"
               >
                 إلغاء

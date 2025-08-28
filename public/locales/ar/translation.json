@@ -10,6 +10,8 @@
     "warehouses": "المخازن",
     "products": "المنتجات",
     "viewProducts": "عرض المنتجات",
+    "quantityManagement": "إدارة الكميات",
+    "inventoryCount": "جرد المخزون",
     "addProduct": "إضافة منتج",
    
     "viewWarehouses": "عرض المخازن",
@@ -23,8 +25,8 @@
     "name": "إيفاء"
   },
   "language": {
-    "switchToArabic": "العربية",
-    "switchToEnglish": "English"
+    "switchToArabic": "ع",
+    "switchToEnglish": "En"
   },
   "header": {
     "welcome": "مرحباً بك في إيفاء",

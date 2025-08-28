@@ -13,6 +13,8 @@
     "addProduct": "Add Product",
     "viewWarehouses": "View Warehouses",
     "priority": "Withdrawal Priority",
+    "quantityManagement": "Quantity Management",
+    "inventoryCount": "Inventory Count",
     "addWarehouse": "Add Warehouse",
     "settings": "Settings",
     "help": "Help",
@@ -22,8 +24,8 @@
     "name": "Eva"
   },
   "language": {
-    "switchToArabic": "العربية",
-    "switchToEnglish": "English"
+    "switchToArabic": "ع",
+    "switchToEnglish": "En"
   },
    "header": {
     "welcome": "Welcome to Ifaa",

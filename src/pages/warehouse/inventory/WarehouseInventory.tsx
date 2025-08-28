@@ -96,6 +96,7 @@ const InventoryCountForm = ({
       const { success, products } = await getProductsByWarehouse(form.warehouse);
       if (success) {
         setProducts(products);
+        console.log(`products,`,products)
         setBulkCount(null);
         if (form.type === "full") {
           setInventoryItems(products.map(product => ({

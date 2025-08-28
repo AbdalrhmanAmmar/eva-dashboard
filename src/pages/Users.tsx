@@ -960,13 +960,13 @@ export default function AdminUsersPage() {
                                 {user.points || 0}
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            {/* <td className="px-6 py-4">
                               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                                 user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                               }`}>
                                 {user.isActive ? 'نشط' : 'غير نشط'}
                               </span>
-                            </td>
+                            </td> */}
                             <td className="px-6 py-4">
                               <Link 
                                 to={`/users/${user._id}`}

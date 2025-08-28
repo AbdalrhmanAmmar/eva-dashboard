@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Phone, User, Edit, Copy, Mail, MapPin, Calendar, 
   Shield, MessageCircle, ShoppingCart, Star, AlertCircle, 
   Trash2, FileText, Check, X 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuthStore } from '../stores/authStore';
-import { Address, IUser } from '../interfaces/User';
-
+import { adminAPI } from '../api/getUser';
+import { Navigate } from 'react-router-dom';
 export default function UserProfilePage({ params }: { params: { id: string } }) {
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,8 +24,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     fullAddress: ''
   });
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
-  const router = useRouter();
-
+  const router = Navigate();
 const handleVerifyAction = async (userId: string, action: "approve" | "reject") => {
   try {
     const response = await adminAPI.verifyEntity(userId, action);

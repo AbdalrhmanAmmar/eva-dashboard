@@ -134,44 +134,7 @@ const WarehousePage: React.FC = () => {
         
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Dropdown Menu */}
-          <div className="relative">
-            <button 
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-soft"
-            >
-              <Settings className="w-5 h-5" />
-              خيارات إضافية
-              <ChevronDown className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-56 bg-card rounded-xl shadow-large border border-border z-10">
-                <div className="py-2">
-                  <button
-                    onClick={() => navigate('/warehouse/view')}
-                    className="flex items-center w-full px-4 py-3 text-sm text-foreground hover:bg-secondary transition-colors gap-3"
-                  >
-                    <Package className="w-4 h-4 text-primary" />
-                    إدارة الكميات
-                  </button>
-                  <button
-                    onClick={() => navigate('/warehouse/inventory')}
-                    className="flex items-center w-full px-4 py-3 text-sm text-foreground hover:bg-secondary transition-colors gap-3"
-                  >
-                    <ClipboardList className="w-4 h-4 text-primary" />
-                    جرد المخزون
-                  </button>
-                  <button
-                    onClick={() => navigate('/warehouse-priority')}
-                    className="flex items-center w-full px-4 py-3 text-sm text-foreground hover:bg-secondary transition-colors gap-3"
-                  >
-                    <ScrollText className="w-4 h-4 text-primary" />
-                    أولوية السحب من المخزون
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+  
           
           <button
             onClick={() => navigate('/warehouse-create')}

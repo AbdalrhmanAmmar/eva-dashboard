@@ -26,7 +26,6 @@ const CreateWarehouse: React.FC = () => {
     street: "",
     phoneNum: "",
     Buildingnumber: "",
-    maplink: ""
   });
   
   const [coordinates, setCoordinates] = useState<{ lat: number | null; lng: number | null }>({ 
@@ -125,52 +124,41 @@ const extractCoordinatesFromLink = (link: string) => {
     return () => clearTimeout(timer);
   }, [formData.country, formData.city, formData.district, formData.street, formData.Buildingnumber]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    try {
-      const data = {
-        ...formData,
-        latitude: coordinates.lat,
-        longitude: coordinates.lng
-      };
-      
-      const response = await createWarehouse(data);
-      
-      toast.success('تم إنشاء المخزن بنجاح!', {
-        position: 'top-right',
-        autoClose: 3000,
-      });
+  try {
+    const data = {
+      ...formData,
+      latitude: coordinates.lat,
+      longitude: coordinates.lng
+    };
+    
+    const response = await createWarehouse(data);
+    
+    toast.success('تم إنشاء المخزن بنجاح!', {
+      position: 'top-right',
+      autoClose: 3000,
+    });
 
-      // إعادة تعيين النموذج
-      setFormData({
-        name: "",
-        country: "",
-        city: "",
-        district: "",
-        street: "",
-        phoneNum: "",
-        Buildingnumber: "",
-      });
-      setCoordinates({ lat: null, lng: null });
-      
-      // العودة إلى صفحة المخازن
-      setTimeout(() => {
-        navigate('/warehouse');
-      }, 1500);
-      
-    } catch (err: any) {
-      setError(err.message || "فشل في إنشاء المخزن");
-      toast.error(err.message || "فشل في إنشاء المخزن", {
-        position: 'top-right',
-        autoClose: 5000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    // الانتظار قبل إعادة التوجيه
+    setTimeout(() => {
+      navigate('/warehouse-management');
+    }, 1000); // تقليل الوقت إلى 1 ثانية
+    
+  } catch (err: any) {
+    console.error('Error creating warehouse:', err);
+    setError(err.response?.data?.message || err.message || "فشل في إنشاء المخزن");
+    toast.error(err.response?.data?.message || err.message || "فشل في إنشاء المخزن", {
+      position: 'top-right',
+      autoClose: 5000,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fullAddress = `${formData.Buildingnumber} ${formData.street}, ${formData.district}, ${formData.city}, ${formData.country}`.trim();
 
@@ -180,7 +168,7 @@ const extractCoordinatesFromLink = (link: string) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/warehouse')}
+            onClick={() => navigate('/warehouse-management')}
             className="p-2 hover:bg-secondary rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -319,24 +307,7 @@ const extractCoordinatesFromLink = (link: string) => {
               </div>
             </div>
 
-              <label className="block text-sm font-medium mb-2">رابط الخريطة</label>
-  <div className="flex gap-2">
-    <input
-      type="text"
-      name="mapLink"
-      value={formData.mapLink}
-      onChange={handleChange}
-      placeholder="ألصق رابط من Google Maps أو OpenStreetMap"
-      className="w-full px-4 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-    />
-    <button
-      type="button"
-      onClick={() => extractCoordinatesFromLink(formData.mapLink)}
-      className="px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
-    >
-      جلب
-    </button>
-  </div>
+
             
 
             {/* رسائل الخطأ */}
