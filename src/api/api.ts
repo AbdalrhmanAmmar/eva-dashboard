@@ -3,7 +3,7 @@ import axios from "axios";
 
 // إعداد Axios
 const api = axios.create({
-  baseURL: "http://back-api.evasaudi.com/api",
+  baseURL: "https://back-api.evasaudi.com/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

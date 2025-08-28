@@ -1,48 +1,55 @@
-import React from "react";
-import { Search, Bell, User, Menu } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import i18n from "../i18n";
-import { useSidebarStore } from "../store/sidebarStore";
+import React, { useEffect, useState } from 'react';
+import { Search, Bell, Settings, User, Menu } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuToggle: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
   const { t } = useTranslation();
-  const { toggleVisibility } = useSidebarStore();
-  const currentLanguage = i18n.language;
+    const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+  
 
-  const handleLanguageClick = () => {
-    i18n.changeLanguage(currentLanguage === "ar" ? "en" : "ar");
-  };
-
+   const handleLanguageClick = () => {
+      const newLanguage = currentLanguage === 'ar' ? 'en' : 'ar';
+      setCurrentLanguage(newLanguage);
+      i18n.changeLanguage(newLanguage);
+    };
+  
+    useEffect(() => {
+      setCurrentLanguage(i18n.language);
+    }, [i18n.language]);
+  
   return (
     <header className="bg-white border-b border-border px-6 py-4 sticky top-0 z-40 shadow-soft">
       <div className="flex items-center justify-between">
         {/* Left Side */}
         <div className="flex items-center gap-4">
           <button
-            onClick={toggleVisibility}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            onClick={onMenuToggle}
+            className="lg:hidden p-2 hover:bg-secondary rounded-lg transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              {t("header.welcome")}
+              {t('header.welcome')} {/* تم التصحيح هنا */}
             </h2>
-            <p className="text-muted-foreground">{t("header.subtitle")}</p>
+            <p className="text-muted-foreground">
+              {t('header.subtitle')} {/* تم التصحيح هنا */}
+            </p>
           </div>
         </div>
-
-        {/* Language Toggle */}
-        <div className="mx-auto my-4">
-          <button
-            className="btn-gradient rounded-md px-6 py-2 text-white font-medium transition-all hover:opacity-90"
-            onClick={handleLanguageClick}
-          >
-            {currentLanguage === "ar"
-              ? t("language.switchToEnglish")
-              : t("language.switchToArabic")}
-          </button>
-        </div>
+              <div className='mx-auto my-4'>
+        <button
+          className="btn-gradient rounded-md px-6 py-2 text-white font-medium transition-all hover:opacity-90"
+          onClick={handleLanguageClick}
+        >
+          {currentLanguage === 'ar' ? t('language.switchToEnglish') : t('language.switchToArabic')}
+        </button>
+      </div>
 
         {/* Right Side */}
         <div className="flex items-center gap-4">
@@ -51,7 +58,7 @@ const Header: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder={t("header.search")}
+              placeholder={t('header.search')} 
               className="pr-10 pl-10 py-2 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
             />
           </div>
@@ -64,14 +71,17 @@ const Header: React.FC = () => {
             </button>
           </div>
 
+          {/* Settings */}
+
+
           {/* User Profile */}
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
               <User className="w-5 h-5 text-white" />
             </div>
             <div className="hidden sm:block">
-              <p className="text-sm font-medium">{t("header.username")}</p>
-              <p className="text-xs text-muted-foreground">{t("header.role")}</p>
+              <p className="text-sm font-medium">{t('header.username')}</p> {/* تم التصحيح هنا */}
+              <p className="text-xs text-muted-foreground">{t('header.role')}</p> {/* تم التصحيح هنا */}
             </div>
           </div>
         </div>

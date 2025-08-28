@@ -64,14 +64,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { icon: LogOut, label: t('sidebar.logout') },
   ];
 
-  // إغلاق القوائم المنسدلة عند طي الشريط الجانبي
-  useEffect(() => {
-    if (isCollapsed) {
-      setWarehouseDropdownOpen(false);
-      setProductsDropdownOpen(false);
-    }
-  }, [isCollapsed]);
-
   // إغلاق القائمة المنسدلة الأخرى عند فتح واحدة
   const toggleWarehouseDropdown = () => {
     if (!isCollapsed) {
@@ -102,7 +94,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
               <h1 className="text-xl font-bold text-gradient">{t('brand.name')}</h1>
             </div>
           )}
-          {/* تم إزالة زر التبديل من هنا */}
+          <button
+            onClick={onToggle}
+            className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ${
+              isCollapsed ? '' : 'rotate-180'
+            }`} />
+          </button>
         </div>
       </div>
 

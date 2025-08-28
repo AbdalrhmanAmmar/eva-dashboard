@@ -1,19 +1,20 @@
-import { create } from "zustand";
+// stores/useSidebarStore.ts
+import { create } from 'zustand';
 
 interface SidebarState {
   isCollapsed: boolean;
-  isHidden: boolean;
-  toggleCollapse: () => void;
-  toggleVisibility: () => void;
-  hideSidebar: () => void;
-  showSidebar: () => void;
+  isMobileOpen: boolean;
+  toggleSidebar: () => void;
+  collapseSidebar: () => void;
+  toggleMobile: () => void;
+  closeMobile: () => void;
 }
 
 export const useSidebarStore = create<SidebarState>((set) => ({
   isCollapsed: false,
-  isHidden: false,
-  toggleCollapse: () => set((s) => ({ isCollapsed: !s.isCollapsed })),
-  toggleVisibility: () => set((s) => ({ isHidden: !s.isHidden })),
-  hideSidebar: () => set({ isHidden: true }),
-  showSidebar: () => set({ isHidden: false }),
+  isMobileOpen: false,
+  toggleSidebar: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
+  collapseSidebar: () => set({ isCollapsed: true }),
+  toggleMobile: () => set((state) => ({ isMobileOpen: !state.isMobileOpen })),
+  closeMobile: () => set({ isMobileOpen: false }),
 }));
