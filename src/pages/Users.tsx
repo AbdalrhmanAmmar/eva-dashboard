@@ -950,13 +950,13 @@ export default function AdminUsersPage() {
                               {user.country || "-"} / {user.city || "-"}
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-2 justify-end">
+                              <div className="flex items-center gap-2 justify-start">
                                 <span>{user.ordersCount || 0}</span>
                                 {renderTrendIndicator(user.ordersTrend)}
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="flex justify-end">
+                              <div className="flex justify-start">
                                 {user.points || 0}
                               </div>
                             </td>
