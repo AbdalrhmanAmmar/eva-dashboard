@@ -7,32 +7,23 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Layout: React.FC = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { i18n } = useTranslation();
 
-  const handleSidebarToggle = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(prev => !prev);
   };
 
-  const handleMobileMenuToggle = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  // نحدد الاتجاه حسب اللغة الحالية
   const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
   const isRTL = dir === 'rtl';
 
   return (
-    <div dir={dir} className="min-h-screen bg-background flex">
+    <div dir={dir} className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div
-        className={`fixed lg:static inset-y-0 left-0 z-50 transition-transform duration-300 ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
-      >
-        <Sidebar isCollapsed={sidebarCollapsed} onToggle={handleSidebarToggle} />
-      </div>
+      <Sidebar 
+        isMobileMenuOpen={mobileMenuOpen}
+        onMobileMenuToggle={toggleMobileMenu}
+      />
 
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
@@ -44,14 +35,14 @@ const Layout: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header onMenuToggle={handleMobileMenuToggle} />
+        <Header onMenuClick={toggleMobileMenu} />
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 overflow-auto">
           <Outlet />
         </main>
       </div>
 
-      {/* Toast Container - يظهر في جميع الصفحات */}
+      {/* Toast Container */}
       <ToastContainer
         position={isRTL ? "top-left" : "top-right"}
         autoClose={3000}

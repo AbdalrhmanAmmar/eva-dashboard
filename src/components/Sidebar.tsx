@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -8,8 +8,6 @@ import {
   FileText, 
   HelpCircle,
   LogOut,
-  ChevronLeft,
-  ChevronDown,
   Crown,
   MessageSquare,
   Smartphone,
@@ -17,16 +15,21 @@ import {
   Warehouse,
   ArrowUpDown,
   Plus,
-  ClipboardList
+  ClipboardList,
+  X,
+  ChevronDown
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface SidebarProps {
-  isCollapsed: boolean;
-  onToggle: () => void;
+  isMobileMenuOpen?: boolean;
+  onMobileMenuToggle?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  isMobileMenuOpen = false, 
+  onMobileMenuToggle 
+}) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,43 +69,54 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
 
   // إغلاق القائمة المنسدلة الأخرى عند فتح واحدة
   const toggleWarehouseDropdown = () => {
-    if (!isCollapsed) {
-      setWarehouseDropdownOpen(!warehouseDropdownOpen);
-      setProductsDropdownOpen(false);
-    }
+    setWarehouseDropdownOpen(!warehouseDropdownOpen);
+    setProductsDropdownOpen(false);
   };
 
   const toggleProductsDropdown = () => {
-    if (!isCollapsed) {
-      setProductsDropdownOpen(!productsDropdownOpen);
-      setWarehouseDropdownOpen(false);
+    setProductsDropdownOpen(!productsDropdownOpen);
+    setWarehouseDropdownOpen(false);
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    // إغلاق القائمة الجانبية على الأجهزة المحمولة بعد التنقل
+    if (onMobileMenuToggle && window.innerWidth < 1024) {
+      onMobileMenuToggle();
     }
   };
 
   return (
-    <div className={`bg-white border-l border-border h-screen transition-all duration-300 ease-in-out ${
-      isCollapsed ? 'w-16' : 'w-64'
-    } flex flex-col shadow-soft`}>
+<div
+  className={`bg-white border-l border-border h-screen transition-all duration-300 ease-in-out w-64 flex flex-col shadow-soft fixed lg:static z-50
+    ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:w-0'}`}
+>
       {/* Header */}
       <div className="p-6 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-xl font-bold text-gradient">{t('brand.name')}</h1>
+
+          {isMobileMenuOpen && (
+                <div className=" items-center gap-3 flex">
+            <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <Crown className="w-6 h-6 text-white" />
             </div>
+            <h1 className="text-xl font-bold text-gradient">{t('brand.name')}</h1>
+          </div>
+
           )}
-          <button
-            onClick={onToggle}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <ChevronLeft className={`w-5 h-5 transition-transform duration-300 ${
-              isCollapsed ? '' : 'rotate-180'
-            }`} />
-          </button>
+
+      
+          
+          {/* زر إغلاق القائمة على الأجهزة المحمولة */}
+          {onMobileMenuToggle && (
+            <button
+              onClick={onMobileMenuToggle}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors lg:hidden "
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -112,17 +126,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
           {menuItems.map((item, index) => (
             <li key={index}>
               <button
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavigation(item.path)}
                 className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
                   location.pathname === item.path
                     ? 'bg-gradient-primary text-white shadow-soft'
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 } w-full ${i18n.dir() === 'rtl' ? 'text-right' : 'text-left'}`}
               >
-                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
-                {!isCollapsed && (
-                  <span className="font-medium">{item.label}</span>
-                )}
+                <item.icon className={`w-5 h-5 ${i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
+                <span className="font-medium">{item.label}</span>
               </button>
             </li>
           ))}
@@ -140,44 +152,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
               }`}
             >
               <div className="flex items-center">
-                <Warehouse className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
-                {!isCollapsed && (
-                  <span className="font-medium">{t('sidebar.warehouses')}</span>
-                )}
+                <Warehouse className={`w-5 h-5 ${i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
+                <span className="font-medium">{t('sidebar.warehouses')}</span>
               </div>
-              {!isCollapsed && (
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
-                  warehouseDropdownOpen ? 'rotate-180' : ''
-                }`} />
-              )}
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                warehouseDropdownOpen ? 'rotate-180' : ''
+              }`} />
             </button>
             
             {/* Dropdown Items with animation */}
-            {!isCollapsed && (
-              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                warehouseDropdownOpen ? 'max-h-96' : 'max-h-0'
-              }`}>
-                <ul className="mt-2 space-y-1 pl-6">
-                  {warehouseItems.map((item, index) => (
-                    <li key={index}>
-                      <button
-                        onClick={() => navigate(item.path)}
-                        className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 group w-full ${
-                          i18n.dir() === 'rtl' ? 'text-right' : 'text-left'
-                        } text-sm ${
-                          location.pathname === item.path
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-                        }`}
-                      >
-                        <item.icon className={`w-4 h-4 ${i18n.dir() === 'rtl' ? 'ml-2' : 'mr-2'}`} />
-                        <span className="font-medium">{item.label}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              warehouseDropdownOpen ? 'max-h-96' : 'max-h-0'
+            }`}>
+              <ul className="mt-2 space-y-1 pl-6">
+                {warehouseItems.map((item, index) => (
+                  <li key={index}>
+                    <button
+                      onClick={() => handleNavigation(item.path)}
+                      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 group w-full ${
+                        i18n.dir() === 'rtl' ? 'text-right' : 'text-left'
+                      } text-sm ${
+                        location.pathname === item.path
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                      }`}
+                    >
+                      <item.icon className={`w-4 h-4 ${i18n.dir() === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                      <span className="font-medium">{item.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </li>
           
           {/* Products Dropdown */}
@@ -193,61 +199,53 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
               }`}
             >
               <div className="flex items-center">
-                <Package className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
-                {!isCollapsed && (
-                  <span className="font-medium">{t('sidebar.products')}</span>
-                )}
+                <Package className={`w-5 h-5 ${i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
+                <span className="font-medium">{t('sidebar.products')}</span>
               </div>
-              {!isCollapsed && (
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
-                  productsDropdownOpen ? 'rotate-180' : ''
-                }`} />
-              )}
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                productsDropdownOpen ? 'rotate-180' : ''
+              }`} />
             </button>
             
             {/* Dropdown Items with animation */}
-            {!isCollapsed && (
-              <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                productsDropdownOpen ? 'max-h-96' : 'max-h-0'
-              }`}>
-                <ul className="mt-2 space-y-1 pl-6">
-                  {productItems.map((item, index) => (
-                    <li key={index}>
-                      <button
-                        onClick={() => navigate(item.path)}
-                        className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 group w-full ${
-                          i18n.dir() === 'rtl' ? 'text-right' : 'text-left'
-                        } text-sm ${
-                          location.pathname === item.path
-                            ? 'bg-primary/20 text-primary'
-                            : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-                        }`}
-                      >
-                        <item.icon className={`w-4 h-4 ${i18n.dir() === 'rtl' ? 'ml-2' : 'mr-2'}`} />
-                        <span className="font-medium">{item.label}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              productsDropdownOpen ? 'max-h-96' : 'max-h-0'
+            }`}>
+              <ul className="mt-2 space-y-1 pl-6">
+                {productItems.map((item, index) => (
+                  <li key={index}>
+                    <button
+                      onClick={() => handleNavigation(item.path)}
+                      className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 group w-full ${
+                        i18n.dir() === 'rtl' ? 'text-right' : 'text-left'
+                      } text-sm ${
+                        location.pathname === item.path
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+                      }`}
+                    >
+                      <item.icon className={`w-4 h-4 ${i18n.dir() === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                      <span className="font-medium">{item.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </li>
           
           {/* Other Items */}
           {otherItems.map((item, index) => (
             <li key={index}>
               <button
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavigation(item.path)}
                 className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 group ${
                   location.pathname === item.path
                     ? 'bg-gradient-primary text-white shadow-soft'
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 } w-full ${i18n.dir() === 'rtl' ? 'text-right' : 'text-left'}`}
               >
-                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
-                {!isCollapsed && (
-                  <span className="font-medium">{item.label}</span>
-                )}
+                <item.icon className={`w-5 h-5 ${i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
+                <span className="font-medium">{item.label}</span>
               </button>
             </li>
           ))}
@@ -255,7 +253,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
       </nav>
 
       {/* Bottom Items */}
-      <div className="p-4 border-t border-border mt-auto flex-shrink-0">
+
+      {isMobileMenuOpen && (
+            <div className="p-4 border-t border-border mt-auto flex-shrink-0">
         <ul className="space-y-2">
           {bottomItems.map((item, index) => (
             <li key={index}>
@@ -268,15 +268,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                     : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${isCollapsed ? 'mx-auto' : i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
-                {!isCollapsed && (
-                  <span className="font-medium">{item.label}</span>
-                )}
+                <item.icon className={`w-5 h-5 ${i18n.dir() === 'rtl' ? 'ml-3' : 'mr-3'}`} />
+                <span className="font-medium">{item.label}</span>
               </button>
             </li>
           ))}
         </ul>
       </div>
+
+      )}
+  
     </div>
   );
 };
