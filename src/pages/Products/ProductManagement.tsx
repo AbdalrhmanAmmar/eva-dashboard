@@ -15,9 +15,14 @@ import {
   Archive,
   Plus,
   ChevronDown,
-  Settings
+  Settings,
+  Trash,
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { getFileUrl } from '../../utils/fileUrl';
+import { productAPI } from '../../api/prodcuts';
+import { useNavigate } from 'react-router-dom';
 
 // واجهة بيانات المنتج
 interface Product {
@@ -54,88 +59,77 @@ interface Product {
   maxOrderQty?: number;
 }
 
-// واجهة الاستجابة من API
-interface ProductsResponse {
-  success: boolean;
-  count: number;
-  total: number;
-  page: number;
-  pages: number;
-  products: Product[];
-}
+// مكون المودال للحذف
+const DeleteModal = ({ isOpen, onClose, onConfirm, product, loading }) => {
+  if (!isOpen) return null;
 
-// محاكاة للدالة API (يجب استبدالها بالدالة الحقيقية)
-const productAPI = {
-  getAllProducts: async (params?: {
-    page?: number;
-    limit?: number;
-    category?: string;
-    tag?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    sortBy?: string;
-    search?: string;
-  }): Promise<ProductsResponse> => {
-    // في الواقع، سيتم استدعاء API الحقيقي هنا
-    // هذه محاكاة للبيانات
-    return {
-      success: true,
-      count: 10,
-      total: 11,
-      page: params?.page || 1,
-      pages: 2,
-      products: [
-        {
-          _id: "687733c887c26b295e8a995b",
-          name: "high",
-          description: "",
-          priceBeforeDiscount: 0,
-          priceAfterDiscount: 0,
-          quantity: 0,
-          showQuantity: false,
-          showProduct: true,
-          showDiscount: false,
-          showRelatedProduct: false,
-          discounts: [],
-          requiresShipping: true,
-          images: [
-            {
-              url: "images-1752642504555.jpg",
-              isMain: false,
-              order: 0,
-              _id: "687733c887c26b295e8a995c"
-            }
-          ],
-          category: "إلكترونيات",
-          tag: "",
-          showTag: false,
-          shortDescription: "",
-          showReviews: true,
-          averageRating: 0,
-          numberOfReviews: 0,
-          warehouse: "68763e8d28d474e9e84a4ba5",
-          createdBy: null,
-          sku: "578978789",
-          barcode: "787878",
-          weight: 78,
-          minOrder: 23,
-          maxOrder: 33,
-          isTaxExempt: false,
-          relatedProducts: [],
-          createdAt: "2025-07-16T05:08:24.577Z"
-        },
-        // يمكن إضافة المزيد من المنتجات هنا حسب الحاجة
-      ]
-    };
-  }
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 animate-in fade-in-90 zoom-in-90">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900">تأكيد الحذف</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="flex items-start gap-4 mb-6">
+            <div className="p-2 bg-red-100 rounded-full">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <p className="text-gray-700 mb-2">هل أنت متأكد من رغبتك في حذف هذا المنتج؟</p>
+              <p className="font-medium text-gray-900">{product?.name}</p>
+              <p className="text-sm text-gray-500">هذا الإجراء لا يمكن التراجع عنه.</p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              إلغاء
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  جاري الحذف...
+                </>
+              ) : (
+                <>
+                  <Trash className="w-4 h-4" />
+                  حذف المنتج
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const ProductManagement: React.FC = () => {
+  const router = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [totalProducts, setTotalProducts] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -198,6 +192,35 @@ const ProductManagement: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // فتح مودال الحذف
+  const openDeleteModal = (product: Product) => {
+    setProductToDelete(product);
+    setDeleteModalOpen(true);
+  };
+
+  // إغلاق مودال الحذف
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setProductToDelete(null);
+  };
+
+  // تأكيد الحذف
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    setDeleteLoading(true);
+    try {
+      await productAPI.deleteProduct(productToDelete._id);
+      // إعادة جلب البيانات بعد الحذف
+      fetchProducts();
+      closeDeleteModal();
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   // استخراج الفئات الفريدة من المنتجات
@@ -285,7 +308,7 @@ const ProductManagement: React.FC = () => {
             <div>
               <p className="text-orange-100 text-sm font-medium">قيمة المخزون</p>
               <p className="text-3xl font-bold mt-2">
-                {(stats.totalValue / 1000).toFixed(0)}K
+                {(stats.totalValue / 10000).toFixed(1)}K
               </p>
               <p className="text-orange-100 text-xs">ريال سعودي</p>
             </div>
@@ -336,35 +359,16 @@ const ProductManagement: React.FC = () => {
           
           <button 
             type="submit"
-            className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
-            <Search className="w-4 h-4 ml-2" />
+            <Search className="ml-2" />
             بحث
           </button>
 
-          <button className="flex items-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors relative group">
-            <Settings className="w-4 h-4" />
-            خيارات إضافية
-            <ChevronDown className="w-4 h-4 transition-transform group-hover:rotate-180" />
-            <div className="absolute top-full right-0 mt-1 w-56 bg-white rounded-md shadow-lg z-10 hidden group-hover:block border border-gray-200">
-              <div className="py-1">
-                <button 
-                  type="button"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 w-full text-right"
-                >
-                  تصدير المنتجات
-                </button>
-                <button 
-                  type="button"
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 gap-2 w-full text-right"
-                >
-                  استيراد المنتجات
-                </button>
-              </div>
-            </div>
-          </button>
-
-          <button className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => router('/product-create')}
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             <Plus className="w-4 h-4" />
             إضافة منتج
           </button>
@@ -390,13 +394,18 @@ const ProductManagement: React.FC = () => {
               {loading ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center">
-                    جاري التحميل...
+                    <div className="flex justify-center items-center py-8">
+                      <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+                    </div>
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center text-gray-600">
-                    لا توجد منتجات
+                    <div className="py-8 flex flex-col items-center">
+                      <Package className="w-12 h-12 text-gray-400 mb-2" />
+                      <p>لا توجد منتجات</p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -407,7 +416,7 @@ const ProductManagement: React.FC = () => {
                         <div className="flex-shrink-0 h-10 w-10">
                           <img
                             className="h-10 w-10 rounded-md object-cover"
-                            src={getFileUrl(product.images[0]?.url)}
+                            src={getFileUrl(`/uploads/product/${product.images[0]?.url}`)}
                             alt={product.name}
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40';
@@ -444,11 +453,19 @@ const ProductManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" title="عرض التفاصيل">
-                          <Eye className="w-4 h-4" />
+                        <button 
+                          onClick={() => router(`/product-edit/${product._id}`)}
+                          className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" 
+                          title="تعديل المنتج"
+                        >
+                          <Edit className="w-5 h-5" />
                         </button>
-                        <button className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors" title="تعديل">
-                          <Edit className="w-4 h-4" />
+                        <button 
+                          onClick={() => openDeleteModal(product)}
+                          className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors" 
+                          title="حذف المنتج"
+                        >
+                          <Trash className="w-5 h-5" />
                         </button>
                       </div>
                     </td>
@@ -548,6 +565,15 @@ const ProductManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        product={productToDelete}
+        loading={deleteLoading}
+      />
     </div>
   );
 };

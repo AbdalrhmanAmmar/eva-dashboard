@@ -18,8 +18,10 @@ const Layout: React.FC = () => {
   const isRTL = dir === 'rtl';
 
   return (
-    <div dir={dir} className="min-h-screen bg-gray-50 flex">
+    <div dir={dir} className="min-h-screen bg-gray-50 flex ">
       {/* Sidebar */}
+
+      <div></div>
       <Sidebar 
         isMobileMenuOpen={mobileMenuOpen}
         onMobileMenuToggle={toggleMobileMenu}

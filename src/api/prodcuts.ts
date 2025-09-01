@@ -1,22 +1,30 @@
+import api from "./api";
+
 export const productAPI = {
   // جلب جميع المنتجات مع الفلترة والبحث
-  getAllProducts: async (params?: {
-    page?: number;
-    limit?: number;
-    category?: string;
-    tag?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    sortBy?: string;
-    search?: string;
-  }): Promise<{ success: boolean; products: any[]; total: number }> => {
-    try {
-      const response = await api.get("/products", { params });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || "حدث خطأ أثناء جلب المنتجات");
-    }
-  },
+getAllProducts: async (params?: {
+  page?: number;
+  limit?: number;
+  category?: string;
+  tag?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: string;
+  search?: string;
+}): Promise<{ success: boolean; products: any[]; total: number }> => {
+  try {
+    const response = await api.get("/products", { params });
+    return response.data;
+  } catch (error: any) {
+    console.error("Error fetching products:", error);
+    return { 
+      success: false, 
+      products: [], 
+      total: 0,
+      message: error.response?.data?.message || "حدث خطأ أثناء جلب المنتجات"
+    };
+  }
+},
 
   // جلب منتج واحد عبر ID
 getProductById: async (id: string): Promise<{ success: boolean; product: any | null }> => {
@@ -58,17 +66,21 @@ getProductById: async (id: string): Promise<{ success: boolean; product: any | n
   },
 
   // إنشاء منتج جديد (مع صور)
-  createProduct: async (formData: FormData): Promise<{ success: boolean; product: any }> => {
+  createProduct: async (formData: FormData): Promise<{ success: boolean; product: any; message?: string }> => {
     try {
       const response = await api.post("/products", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return response.data;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || "حدث خطأ أثناء إنشاء المنتج");
+      console.error("Error creating product:", error);
+      return { 
+        success: false, 
+        product: null,
+        message: error.response?.data?.message || "حدث خطأ أثناء إنشاء المنتج"
+      };
     }
   },
-
   // تحديث منتج
   updateProduct: async (id: string, formData: FormData): Promise<{ success: boolean; product: any }> => {
     try {

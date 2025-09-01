@@ -94,6 +94,7 @@ const InventoryCountForm = ({
     setFetchingProducts(true);
     try {
       const { success, products } = await getProductsByWarehouse(form.warehouse);
+      console.log(`success`,success)
       if (success) {
         setProducts(products);
         console.log(`products,`,products)
@@ -527,8 +528,8 @@ const InventoryCountForm = ({
                             
                             <td className="px-3 py-2 text-center">
                               {product.images?.[0] && (
-                                <Image
-                                  src={`http://localhost:4000/uploads/${product.images[0].url}`}
+                                <img
+                                  src={`http://localhost:4000/uploads/product/${product.images[0].url}`}
                                   alt={product.name}
                                   width={48}
                                   height={48}
@@ -754,9 +755,9 @@ const InventoryCountForm = ({
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="w-12 px-3 py-2"></th>
-                    <th className="px-3 py-2 text-left">الصورة</th>
-                    <th className="px-3 py-2 text-left">اسم المنتج</th>
-                    <th className="px-3 py-2 text-left">SKU</th>
+                    <th className="px-3 py-2 text-right">الصورة</th>
+                    <th className="px-3 py-2 text-right">اسم المنتج</th>
+                    <th className="px-3 py-2 text-right">SKU</th>
                     <th className="px-3 py-2 text-right">الكمية الحالية</th>
                   </tr>
                 </thead>
@@ -780,9 +781,8 @@ const InventoryCountForm = ({
                         </td>
                         <td className="px-3 py-2">
                           {product.images?.[0] && (
-                            <Image
-                              src={`http://localhost:4000/uploads/${product.images[0].url}`}
-                              alt={product.name}
+                            <img
+src={getFileUrl(`/uploads/product/${product.images[0]?.url}`)}                              alt={product.name}
                               width={40}
                               height={40}
                               className="rounded object-cover"

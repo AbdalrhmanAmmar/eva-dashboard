@@ -1,334 +1,75 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Package, 
-  RefreshCw, 
-  Filter, 
-  Download, 
-  Search,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  CheckCircle,
-  Eye,
-  Edit,
-  BarChart3,
-  Archive,
-  Plus,
-  ChevronDown,
-  Settings,
-  Upload,
-  Image as ImageIcon,
-  Star,
-  X,
-  Loader,
-  Tag,
-  Box,
-  Truck,
-  ShieldOff,
-  Gauge,
-  Trash2
-} from 'lucide-react';
-import { getAllWarehouses } from '../../api/warehouseAPI';
-import { productAPI } from '../../api/prodcuts';
+// @ts-nocheck
 
-interface Product {
-  _id: string;
-  name: string;
-  description: string;
-  priceBeforeDiscount: number;
-  priceAfterDiscount: number;
-  quantity: number;
-  showQuantity: boolean;
-  showProduct: boolean;
-  showDiscount: boolean;
-  images: { url: string; isMain: boolean; order: number; _id: string }[];
-  category: string;
-  tag: string;
-  showTag: boolean;
-  shortDescription: string;
-  averageRating: number;
-  numberOfReviews: number;
-  sku: string;
-  barcode: string;
-  weight: number;
-  requiresShipping: boolean;
-  isTaxExempt: boolean;
-  createdAt: string;
-  discounts: any[];
-  relatedProducts: string[];
-  showRelatedProduct: boolean;
-  warehouse: string;
-  createdBy: string | null;
-  minOrder?: number;
-  maxOrder?: number;
-  minOrderQty?: number;
-  maxOrderQty?: number;
-  keywords: string;
-}
 
-interface ImagePreview {
+
+import { useState, useEffect, useCallback } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Input } from "../../components/ui/input"; 
+import { Label } from "../../components/ui/label";
+import { Switch } from "../../components/ui/switch"; 
+import { Loader, X, Upload, Image as ImageIcon, Plus, Star, Trash2, Edit, AlertCircle, Check, ChevronDown, Package, Barcode, Truck, ShieldOff, Tag, Box, Gauge, Minus, Maximize } from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import { toast } from "sonner";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { Button } from "../../components/ui/Button";
+import { productAPI } from "../../api/prodcuts";
+import { getAllWarehouses } from "../../api/warehouseAPI";
+
+const { createProduct, getAllProducts, updateProduct, deleteProduct } = productAPI;
+
+// Schema validation
+const productSchema = z.object({
+  name: z.string().min(1, "اسم المنتج مطلوب"),
+  sku: z.string().min(1, "رمز المنتج مطلوب"),
+  barcode: z.string().optional(),
+  weight: z.number().min(0, "الوزن يجب أن يكون موجب").optional(),
+  priceBeforeDiscount: z.number().min(0, "السعر يجب أن يكون موجب"),
+  discountAmount: z.number().min(0).optional(),
+  discountPercentage: z.number().min(0).max(100).optional(),
+  showDiscount: z.boolean(),
+  quantity: z.number().min(0, "الكمية يجب أن تكون موجبة"),
+  category: z.string().min(1, "التصنيف مطلوب"),
+  warehouse: z.string().min(1, "المخزن مطلوب"),
+  tag: z.string().optional(),
+  description: z.string().optional(),
+  shortDescription: z.string().optional(),
+  showQuantity: z.boolean(),
+  showRatings: z.boolean(),
+  showTag: z.boolean(),
+  isActive: z.boolean(),
+  similarProducts: z.array(z.string()).optional(),
+  requiresShipping: z.boolean(),
+  taxExempt: z.boolean(),
+  costPrice: z.number().min(0).optional(),
+  minOrder: z.number().min(1).optional(),
+  maxOrder: z.number().min(1).optional(),
+  keywords: z.string().optional(),
+});
+
+type ProductFormValues = z.infer<typeof productSchema>;
+
+type ImagePreview = {
   url: string;
   isMain: boolean;
   file?: File;
   id: string;
-}
+};
 
-const ProductForm: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [newCategory, setNewCategory] = useState("");
-  const [previews, setPreviews] = useState<ImagePreview[]>([]);
-  const [mainImageName, setMainImageName] = useState("");
-  const [showSimilarProducts, setShowSimilarProducts] = useState(false);
-  const [similarProductsSearch, setSimilarProductsSearch] = useState("");
-
-  const [formData, setFormData] = useState({
-    name: "",
-    sku: "",
-    barcode: "",
-    weight: 0,
-    priceBeforeDiscount: 0,
-    discountAmount: 0,
-    discountPercentage: 0,
-    showDiscount: false,
-    quantity: 0,
-    category: "",
-    warehouse: "",
-    tag: "",
-    description: "",
-    shortDescription: "",
-    showQuantity: false,
-    showRatings: false,
-    showTag: false,
-    isActive: true,
-    similarProducts: [] as string[],
-    requiresShipping: true,
-    taxExempt: false,
-    costPrice: 0,
-    minOrder: 1,
-    maxOrder: 100,
-    keywords: "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // محاكاة لجلب البيانات من API
-   const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [productsResponse, warehousesResponse] = await Promise.all([
-        productAPI.getAllProducts(),
-        getAllWarehouses()
-      ]);
-      
-      if (productsResponse.success) {
-        setProducts(productsResponse.products);
-        const uniqueCategories = [...new Set(productsResponse.products.map(p => p.category))];
-        setCategories(uniqueCategories);
-      }
-      
-      if (warehousesResponse.success) {
-        setWarehouses(warehousesResponse.warehouses);
-      }
-    } catch (error) {
-      toast.error("حدث خطأ أثناء جلب البيانات");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    console.log(warehouses)
-  }, [warehouses]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else if (type === 'number') {
-      setFormData(prev => ({ ...prev, [name]: Number(value) }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-
-    // مسح الخطأ عند التعديل
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.name) newErrors.name = "اسم المنتج مطلوب";
-    if (!formData.sku) newErrors.sku = "رمز المنتج مطلوب";
-    if (!formData.category) newErrors.category = "التصنيف مطلوب";
-    if (!formData.warehouse) newErrors.warehouse = "المخزن مطلوب";
-    if (formData.quantity < 0) newErrors.quantity = "الكمية يجب أن تكون موجبة";
-    if (formData.priceBeforeDiscount < 0) newErrors.priceBeforeDiscount = "السعر يجب أن يكون موجب";
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    // محاكاة عملية الحفظ
-    setTimeout(() => {
-      console.log('Form data:', formData);
-      setIsSubmitting(false);
-      alert(editingProduct ? 'تم تحديث المنتج بنجاح' : 'تم إضافة المنتج بنجاح');
-      
-      if (!editingProduct) {
-        // Reset form after successful submission for new product
-        setFormData({
-          name: "",
-          sku: "",
-          barcode: "",
-          weight: 0,
-          priceBeforeDiscount: 0,
-          discountAmount: 0,
-          discountPercentage: 0,
-          showDiscount: false,
-          quantity: 0,
-          category: "",
-          warehouse: "",
-          tag: "",
-          description: "",
-          shortDescription: "",
-          showQuantity: false,
-          showRatings: false,
-          showTag: false,
-          isActive: true,
-          similarProducts: [],
-          requiresShipping: true,
-          taxExempt: false,
-          costPrice: 0,
-          minOrder: 1,
-          maxOrder: 100,
-          keywords: "",
-        });
-        setPreviews([]);
-        setMainImageName("");
-      }
-    }, 2000);
-  };
-
-  const handleNewProduct = () => {
-    setEditingProduct(null);
-    setFormData({
-      name: "",
-      sku: "",
-      barcode: "",
-      weight: 0,
-      priceBeforeDiscount: 0,
-      discountAmount: 0,
-      discountPercentage: 0,
-      showDiscount: false,
-      quantity: 0,
-      category: "",
-      warehouse: "",
-      tag: "",
-      description: "",
-      shortDescription: "",
-      showQuantity: false,
-      showRatings: false,
-      showTag: false,
-      isActive: true,
-      similarProducts: [],
-      requiresShipping: true,
-      taxExempt: false,
-      costPrice: 0,
-      minOrder: 1,
-      maxOrder: 100,
-      keywords: "",
-    });
-    setPreviews([]);
-    setMainImageName("");
-    setErrors({});
-  };
-
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      sku: product.sku,
-      barcode: product.barcode || "",
-      weight: product.weight || 0,
-      priceBeforeDiscount: product.priceBeforeDiscount,
-      discountAmount: product.priceBeforeDiscount - product.priceAfterDiscount,
-      discountPercentage: ((product.priceBeforeDiscount - product.priceAfterDiscount) / product.priceBeforeDiscount) * 100,
-      showDiscount: product.showDiscount,
-      quantity: product.quantity,
-      category: product.category,
-      warehouse: product.warehouse,
-      tag: product.tag || "",
-      description: product.description || "",
-      shortDescription: product.shortDescription || "",
-      showQuantity: product.showQuantity,
-      showRatings: true, // Assuming this is always true based on the data
-      showTag: product.showTag,
-      isActive: product.showProduct,
-      similarProducts: product.relatedProducts || [],
-      requiresShipping: product.requiresShipping,
-      taxExempt: product.isTaxExempt,
-      costPrice: 0, // Not in the sample data
-      minOrder: product.minOrder || 1,
-      maxOrder: product.maxOrder || 100,
-      keywords: product.keywords || "",
-    });
-
-    if (product.images && product.images.length > 0) {
-      const initialPreviews = product.images.map(img => ({
-        url: `http://localhost:4000/uploads/${img.url}`,
-        isMain: img.isMain,
-        id: img._id
-      }));
-      setPreviews(initialPreviews);
-      
-      const mainImg = product.images.find(img => img.isMain);
-      setMainImageName(mainImg?.url || "");
-    }
-  };
-
-  const handleDeleteProduct = (productId: string) => {
-    if (window.confirm("هل أنت متأكد من حذف هذا المنتج؟")) {
-      // محاكاة عملية الحذف
-      setProducts(prev => prev.filter(p => p._id !== productId));
-      if (editingProduct && editingProduct._id === productId) {
-        handleNewProduct();
-      }
-      alert("تم حذف المنتج بنجاح");
-    }
-  };
-
-  const addCategory = () => {
-    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
-      setCategories([...categories, newCategory.trim()]);
-      setFormData(prev => ({ ...prev, category: newCategory.trim() }));
-      setNewCategory("");
-    }
-  };
-
-  const onDrop = (acceptedFiles: File[]) => {
+// مكون رفع الصور مع سحب وإفلات
+const ImageUploader = ({ 
+  previews, 
+  setPreviews, 
+  mainImageName, 
+  setMainImageName 
+}: {
+  previews: ImagePreview[];
+  setPreviews: (previews: ImagePreview[]) => void;
+  mainImageName: string;
+  setMainImageName: (name: string) => void;
+}) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles?.length) {
       const newPreviews = acceptedFiles.slice(0, 5 - previews.length).map(file => ({
         url: URL.createObjectURL(file),
@@ -344,7 +85,16 @@ const ProductForm: React.FC = () => {
       
       setPreviews([...previews, ...newPreviews]);
     }
-  };
+  }, [previews, setPreviews, setMainImageName]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+    },
+    maxFiles: 5,
+    maxSize: 5 * 1024 * 1024,
+  });
 
   const removeImage = (id: string) => {
     const newPreviews = previews.filter(p => p.id !== id);
@@ -373,128 +123,66 @@ const ProductForm: React.FC = () => {
     );
   };
 
-  const toggleSimilarProduct = (productId: string) => {
-    const currentSimilar = formData.similarProducts;
-    if (currentSimilar.includes(productId)) {
-      setFormData(prev => ({
-        ...prev,
-        similarProducts: currentSimilar.filter(id => id !== productId)
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        similarProducts: [...currentSimilar, productId]
-      }));
-    }
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(previews);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setPreviews(items);
   };
-
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(similarProductsSearch.toLowerCase()) &&
-    (!editingProduct || product._id !== editingProduct._id)
-  );
-
-  const getMainImage = (product: Product) => {
-    if (!product.images || product.images.length === 0) return null;
-    const mainImg = product.images.find(img => img.isMain);
-    return mainImg || product.images[0];
-  };
-
-  // حساب السعر بعد الخصم تلقائياً
-  useEffect(() => {
-    if (formData.priceBeforeDiscount && formData.discountPercentage) {
-      const calculatedAmount = parseFloat(
-        (formData.priceBeforeDiscount * formData.discountPercentage / 100).toFixed(2)
-      );
-      setFormData(prev => ({ ...prev, discountAmount: calculatedAmount }));
-    }
-  }, [formData.priceBeforeDiscount, formData.discountPercentage]);
-
-  useEffect(() => {
-    if (formData.priceBeforeDiscount && formData.discountAmount) {
-      const calculatedPercentage = parseFloat(
-        (formData.discountAmount / formData.priceBeforeDiscount * 100).toFixed(2)
-      );
-      setFormData(prev => ({ ...prev, discountPercentage: calculatedPercentage }));
-    }
-  }, [formData.priceBeforeDiscount, formData.discountAmount]);
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-            {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
-          </h1>
-          <p className="text-gray-600 mt-2">إدارة وعرض جميع المنتجات في المتجر</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => fetchData()}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            تحديث
-          </button>
-          
-          <button 
-            onClick={handleNewProduct}
-            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            منتج جديد
-          </button>
-        </div>
+    <div>
+      <label htmlFor="images">صور المنتج (الحد الأقصى 5 صور)</label>
+      <div
+        {...getRootProps()}
+        className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors bg-background/50"
+      >
+        <input {...getInputProps()} />
+        {isDragActive ? (
+          <p className="text-primary">قم بإسقاط الصور هنا...</p>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <Upload className="h-8 w-8 text-primary" />
+            <p className="text-foreground">اسحب وأسقط الصور هنا، أو انقر للاختيار</p>
+            <p className="text-sm text-muted-foreground">
+              JPG, PNG, WEBP (الحد الأقصى 5MB لكل صورة)
+            </p>
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Right Side - Product Form */}
-        <div className="lg:w-2/3 bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-gray-800">
-              {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
-            </h2>
-            <button 
-              onClick={handleNewProduct}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+      {/* Image Previews with Drag and Drop */}
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="images" direction="horizontal">
+          {(provided) => (
+            <div 
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"
             >
-              <Plus className="w-4 h-4" />
-              منتج جديد
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Image Upload Section */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">صور المنتج (الحد الأقصى 5 صور)</label>
-              <div
-                className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition-colors bg-blue-50"
-              >
-                <input type="file" multiple className="hidden" />
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-8 w-8 text-blue-500" />
-                  <p className="text-gray-700">اسحب وأسقط الصور هنا، أو انقر للاختيار</p>
-                  <p className="text-sm text-gray-500">
-                    JPG, PNG, WEBP (الحد الأقصى 5MB لكل صورة)
-                  </p>
-                </div>
-              </div>
-
-              {/* Image Previews */}
-              {previews.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                  {previews.map((preview, index) => (
-                    <div key={preview.id} className="relative group h-24 rounded-md overflow-hidden border border-gray-200">
+              {previews.map((preview, index) => (
+                <Draggable key={preview.id} draggableId={preview.id} index={index}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className="relative group h-24 rounded-md overflow-hidden border border-border/20"
+                    >
                       <img
                         src={preview.url}
                         alt={`Preview ${index}`}
                         className="h-full w-full object-cover"
                       />
-                      <button
+                      <Button
                         type="button"
-                        onClick={() => setAsMainImage(preview.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAsMainImage(preview.id);
+                        }}
                         className={`absolute top-1 left-1 p-1 rounded-full ${
                           preview.isMain 
                             ? 'bg-yellow-400 text-yellow-900' 
@@ -503,43 +191,495 @@ const ProductForm: React.FC = () => {
                         title={preview.isMain ? "الصورة الرئيسية" : "تحديد كصورة رئيسية"}
                       >
                         <Star className="h-3 w-3" fill={preview.isMain ? "currentColor" : "none"} />
-                      </button>
+                      </Button>
                       <button
                         type="button"
-                        onClick={() => removeImage(preview.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(preview.id);
+                        }}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="حذف الصورة"
                       >
                         <X className="h-3 w-3" />
                       </button>
                       {preview.isMain && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-blue-600 text-white text-xs text-center py-0.5">
+                        <div className="absolute bottom-0 left-0 right-0 bg-primary/80 text-white text-xs text-center py-0.5">
                           رئيسية
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
             </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </div>
+  );
+};
+
+// مكون مفاتيح التبديل
+const ProductToggles = ({ control }: { control: any }) => {
+  const toggles = [
+    {
+      name: "showDiscount",
+      label: "إظهار الخصم",
+      icon: <Tag className="h-4 w-4" />,
+      description: "إظهار نسبة الخصم على صفحة المنتج"
+    },
+    {
+      name: "showQuantity",
+      label: "إظهار الكمية",
+      icon: <Box className="h-4 w-4" />,
+      description: "إظهار الكمية المتبقية من المنتج"
+    },
+    {
+      name: "showRatings",
+      label: "إظهار التقييمات",
+      icon: <Star className="h-4 w-4" />,
+      description: "إظهار تقييمات العملاء للمنتج"
+    },
+    {
+      name: "showTag",
+      label: "إظهار العلامة",
+      icon: <Tag className="h-4 w-4" />,
+      description: "إظهار العلامة المميزة على المنتج"
+    },
+  ];
+
+  return (
+  <div className="space-y-3">
+      <h3 className="font-medium text-foreground">إعدادات المنتج</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {toggles.map((toggle) => (
+          <div key={toggle.name} className="flex items-center gap-4 p-3 bg-background/50 rounded-md border border-border/20">
+            <div className="flex items-center justify-center p-2 rounded-full bg-primary/10 text-primary">
+              {toggle.icon}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <Controller
+                  name={toggle.name}
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className={`${field.value ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'} shadow-md`}
+                    />
+                  )}
+                />
+                <label htmlFor={toggle.name}>{toggle.label}</label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{toggle.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// المكون الرئيسي
+export default function AddProductClient() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [previews, setPreviews] = useState<ImagePreview[]>([]);
+  const [mainImageName, setMainImageName] = useState("");
+  const [showSimilarProducts, setShowSimilarProducts] = useState(false);
+  const [similarProductsSearch, setSimilarProductsSearch] = useState("");
+
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: "",
+      sku: "",
+      barcode: "",
+      weight: 0,
+      priceBeforeDiscount: 0,
+      discountAmount: 0,
+      discountPercentage: 0,
+      showDiscount: false,
+      quantity: 0,
+      category: "",
+      warehouse: "",
+      tag: "",
+      description: "",
+      shortDescription: "",
+      showQuantity: false,
+      showRatings: false,
+      showTag: false,
+      isActive: true,
+      similarProducts: [],
+      requiresShipping: true,
+      taxExempt: false,
+      costPrice: 0,
+      minOrder: 1,
+      maxOrder: 100,
+      keywords: "",
+    },
+  });
+
+  const { watch, setValue, control, handleSubmit, reset, formState, register } = form;
+  const priceBeforeDiscount = watch("priceBeforeDiscount");
+  const discountAmount = watch("discountAmount");
+  const discountPercentage = watch("discountPercentage");
+  const similarProducts = watch("similarProducts") || [];
+
+  // Fetch products and warehouses
+const fetchData = async () => {
+  console.log('1. fetchData started');
+  setIsLoading(true);
+  
+  try {
+    console.log('2. Making API calls...');
+    
+    const [productsResponse, warehousesResponse] = await Promise.all([
+      getAllProducts(),
+      getAllWarehouses()
+    ]);
+
+    console.log('3. Products response:', productsResponse);
+    console.log('4. Warehouses response:', warehousesResponse);
+
+    // معالجة المنتجات
+    if (productsResponse && (productsResponse.success || Array.isArray(productsResponse))) {
+      const productsData = productsResponse.products || productsResponse;
+      console.log('5. Products data:', productsData);
+      setProducts(productsData);
+      const uniqueCategories = [...new Set(productsData.map(p => p.category))];
+      setCategories(uniqueCategories);
+    }
+
+    // معالجة المخازن - جميع الاحتمالات
+    let warehousesData = [];
+    
+    if (warehousesResponse && warehousesResponse.success) {
+      warehousesData = warehousesResponse.warehouses || [];
+      console.log('6. Warehouses from success path:', warehousesData);
+    } 
+    else if (warehousesResponse && warehousesResponse.data) {
+      warehousesData = warehousesResponse.data.warehouses || warehousesResponse.data || [];
+      console.log('7. Warehouses from data path:', warehousesData);
+    } 
+    else if (Array.isArray(warehousesResponse)) {
+      warehousesData = warehousesResponse;
+      console.log('8. Warehouses from array path:', warehousesData);
+    } 
+    else if (warehousesResponse && typeof warehousesResponse === 'object') {
+      // بحث عن أي مصفوفة في الرد
+      for (const key in warehousesResponse) {
+        if (Array.isArray(warehousesResponse[key])) {
+          warehousesData = warehousesResponse[key];
+          console.log('9. Warehouses from object key:', key, warehousesData);
+          break;
+        }
+      }
+    }
+    else {
+      console.log('10. No warehouses data found in response');
+    }
+
+    console.log('11. Final warehouses data:', warehousesData);
+    setWarehouses(warehousesData);
+
+  } catch (error) {
+    console.error('12. Error in fetchData:', error);
+    toast.error("حدث خطأ أثناء جلب البيانات");
+  } finally {
+    console.log('13. fetchData completed');
+    setIsLoading(false);
+  }
+};
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Calculate discount automatically
+  useEffect(() => {
+    if (priceBeforeDiscount && discountPercentage) {
+      const calculatedAmount = parseFloat(
+        (priceBeforeDiscount * discountPercentage / 100).toFixed(2)
+      );
+      setValue("discountAmount", calculatedAmount, { shouldValidate: true });
+    }
+  }, [priceBeforeDiscount, discountPercentage, setValue]);
+
+  useEffect(() => {
+    if (priceBeforeDiscount && discountAmount) {
+      const calculatedPercentage = parseFloat(
+        (discountAmount / priceBeforeDiscount * 100).toFixed(2)
+      );
+      setValue("discountPercentage", calculatedPercentage, { shouldValidate: true });
+    }
+  }, [priceBeforeDiscount, discountAmount, setValue]);
+
+  // Reset form when editing product changes
+  useEffect(() => {
+    if (editingProduct) {
+      reset({
+        name: editingProduct?.name || "",
+        sku: editingProduct?.sku || "",
+        barcode: editingProduct?.barcode || "",
+        weight: editingProduct?.weight || 0,
+        priceBeforeDiscount: editingProduct?.priceBeforeDiscount || 0,
+        discountAmount: editingProduct?.discountAmount || 0,
+        discountPercentage: editingProduct?.discountPercentage || 0,
+        showDiscount: editingProduct?.showDiscount || false,
+        quantity: editingProduct?.quantity || 0,
+        category: editingProduct?.category || "",
+        warehouse: editingProduct?.warehouse || "",
+        tag: editingProduct?.tag || "",
+        description: editingProduct?.description || "",
+        shortDescription: editingProduct?.shortDescription || "",
+        showQuantity: editingProduct?.showQuantity || false,
+        showRatings: editingProduct?.showRatings || false,
+        showTag: editingProduct?.showTag || false,
+        isActive: editingProduct?.isActive ?? true,
+        similarProducts: editingProduct?.similarProducts || [],
+        requiresShipping: editingProduct?.requiresShipping ?? true,
+        taxExempt: editingProduct?.taxExempt ?? false,
+        costPrice: editingProduct?.costPrice || 0,
+        minOrder: editingProduct?.minOrder || 1,
+        maxOrder: editingProduct?.maxOrder || 100,
+        keywords: editingProduct?.keywords || "",
+      });
+      
+      if (editingProduct?.images) {
+        const initialPreviews = editingProduct.images.map((img: any) => ({
+          url: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/uploads/${img.url}`,
+          isMain: img.isMain,
+          id: img._id || Math.random().toString(36).substring(2, 9),
+        }));
+        setPreviews(initialPreviews);
+        
+        const mainImg = editingProduct.images.find((img: any) => img.isMain);
+        setMainImageName(mainImg?.url || "");
+      } else {
+        setPreviews([]);
+        setMainImageName("");
+      }
+    }
+  }, [editingProduct, reset]);
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product);
+  };
+
+  const handleNewProduct = () => {
+    setEditingProduct(null);
+    reset({
+      name: "",
+      sku: "",
+      barcode: "",
+      weight: 0,
+      priceBeforeDiscount: 0,
+      discountAmount: 0,
+      discountPercentage: 0,
+      showDiscount: false,
+      quantity: 0,
+      category: "",
+      warehouse: "",
+      tag: "",
+      description: "",
+      shortDescription: "",
+      showQuantity: false,
+      showRatings: false,
+      showTag: false,
+      isActive: true,
+      similarProducts: [],
+      requiresShipping: true,
+      taxExempt: false,
+      costPrice: 0,
+      minOrder: 1,
+      maxOrder: 100,
+      keywords: "",
+    });
+    setPreviews([]);
+    setMainImageName("");
+  };
+
+  const addCategory = () => {
+    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+      setCategories([...categories, newCategory.trim()]);
+      setValue("category", newCategory.trim());
+      setNewCategory("");
+      toast.success("تمت إضافة الفئة بنجاح");
+    }
+  };
+
+  const onSubmit = async (values: ProductFormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("sku", values.sku);
+      formData.append("barcode", values.barcode || "");
+      formData.append("weight", values.weight?.toString() || "0");
+      formData.append("priceBeforeDiscount", values.priceBeforeDiscount.toString());
+      formData.append("priceAfterDiscount", (values.priceBeforeDiscount - (values.discountAmount || 0)).toString());
+      formData.append("discountAmount", values.discountAmount?.toString() || "0");
+      formData.append("discountPercentage", values.discountPercentage?.toString() || "0");
+      formData.append("showDiscount", values.showDiscount.toString());
+      formData.append("quantity", values.quantity.toString());
+      formData.append("category", values.category);
+      formData.append("warehouse", values.warehouse);
+      formData.append("tag", values.tag || "");
+      formData.append("description", values.description || "");
+      formData.append("shortDescription", values.shortDescription || "");
+      formData.append("showQuantity", values.showQuantity.toString());
+      formData.append("showRatings", values.showRatings.toString());
+      formData.append("showTag", values.showTag.toString());
+      formData.append("isActive", values.isActive.toString());
+      formData.append("requiresShipping", values.requiresShipping.toString());
+      formData.append("taxExempt", values.taxExempt.toString());
+      formData.append("costPrice", values.costPrice?.toString() || "0");
+      formData.append("minOrder", values.minOrder?.toString() || "1");
+      formData.append("maxOrder", values.maxOrder?.toString() || "100");
+      formData.append("keywords", values.keywords || "");
+      
+      // Add similar products
+      values.similarProducts?.forEach(productId => {
+        formData.append("similarProducts", productId);
+      });
+      
+      // Add new images
+      previews.forEach((preview) => {
+        if (preview.file) {
+          formData.append("images", preview.file);
+        }
+      });
+      
+      // Add existing images
+      if (editingProduct?.images) {
+        editingProduct.images.forEach((image: any) => {
+          formData.append("existingImages", image.url);
+        });
+      }
+      
+      // Add main image
+      if (mainImageName) {
+        formData.append("mainImageName", mainImageName);
+      }
+
+      let response;
+      if (editingProduct && editingProduct._id) {
+        response = await updateProduct(editingProduct._id, formData);
+      } else {
+        response = await createProduct(formData);
+      }
+
+      if (response.success) {
+        toast.success(editingProduct ? "تم تحديث المنتج بنجاح" : "تم إضافة المنتج بنجاح");
+        fetchData();
+        if (!editingProduct) {
+          handleNewProduct();
+        }
+      } else {
+        toast.error(response.message || "حدث خطأ أثناء حفظ المنتج");
+      }
+    } catch (error: any) {
+      console.log(error)
+      toast.error(error.message || "حدث خطأ أثناء حفظ المنتج");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (productId: string) => {
+    if (!productId) {
+      toast.error("معرف المنتج غير صالح");
+      return;
+    }
+
+    if (!confirm("هل أنت متأكد من حذف هذا المنتج؟")) return;
+    
+    try {
+      const response = await deleteProduct(productId);
+      if (response.success) {
+        toast.success("تم حذف المنتج بنجاح");
+        setProducts(products.filter(product => product._id !== productId));
+        if (editingProduct?._id === productId) {
+          handleNewProduct();
+        }
+      } else {
+        toast.error(response.message || "حدث خطأ أثناء حذف المنتج");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "حدث خطأ أثناء حذف المنتج");
+    }
+  };
+
+  const getMainImage = (product: any) => {
+    if (!product.images || product.images.length === 0) return null;
+    const mainImg = product.images.find((img: any) => img.isMain);
+    return mainImg || product.images[0];
+  };
+
+  const toggleSimilarProduct = (productId: string) => {
+    const currentSimilar = similarProducts || [];
+    if (currentSimilar.includes(productId)) {
+      setValue("similarProducts", currentSimilar.filter(id => id !== productId));
+    } else {
+      setValue("similarProducts", [...currentSimilar, productId]);
+    }
+  };
+
+  const filteredProducts = products.filter(product => 
+    product.name.toLowerCase().includes(similarProductsSearch.toLowerCase()) &&
+    (!editingProduct || product._id !== editingProduct?._id)
+  );
+
+  return (
+    <div className="p-6 bg-transparent min-h-screen my-6">
+      <div className="flex flex-col lg:flex-row gap-6 rtl">
+        {/* Right Side - Product Form */}
+        <div className="lg:w-2/3 bg-card rounded-lg shadow overflow-hidden border border-border/20">
+          <div className="p-4 border-b border-border/20 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-foreground">
+              {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
+            </h2>
+            <Button 
+              onClick={handleNewProduct}
+              variant="outline"
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              منتج جديد
+            </Button>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+            {/* Image Upload Section */}
+            <ImageUploader 
+              previews={previews}
+              setPreviews={setPreviews}
+              mainImageName={mainImageName}
+              setMainImageName={setMainImageName}
+            />
 
             {/* Product Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">اسم المنتج *</label>
-              <input
+              <label htmlFor="name">اسم المنتج *</label>
+              <Input
                 id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
+                {...register("name")}
                 placeholder="أدخل اسم المنتج"
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${
-                  errors.name ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`mt-1 bg-background/50 ${formState.errors.name ? "border-red-500" : "border-border/20"}`}
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4" />
-                  {errors.name}
+              {formState.errors.name && (
+                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {formState.errors.name.message}
                 </p>
               )}
             </div>
@@ -547,49 +687,43 @@ const ProductForm: React.FC = () => {
             {/* SKU, Barcode, Weight */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="sku" className="block text-sm font-medium text-gray-700 mb-1">رمز المنتج (SKU) *</label>
-                <input
+                <label htmlFor="sku">رمز المنتج (SKU) *</label>
+                <Input
                   id="sku"
-                  name="sku"
-                  value={formData.sku}
-                  onChange={handleInputChange}
+                  {...register("sku")}
                   placeholder="أدخل رمز المنتج"
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${
-                    errors.sku ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`mt-1 bg-background/50 ${formState.errors.sku ? "border-red-500" : "border-border/20"}`}
                 />
-                {errors.sku && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4" />
-                    {errors.sku}
+                {formState.errors.sku && (
+                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {formState.errors.sku.message}
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="barcode" className="block text-sm font-medium text-gray-700 mb-1">رمز الباركود</label>
-                <input
+                <label htmlFor="barcode">رمز الباركود</label>
+                <Input
                   id="barcode"
-                  name="barcode"
-                  value={formData.barcode}
-                  onChange={handleInputChange}
+                  {...register("barcode")}
                   placeholder="أدخل رمز الباركود"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                  className="mt-1 bg-background/50 border-border/20"
                 />
               </div>
 
               <div>
-                <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">الوزن (كجم)</label>
-                <input
+                <label htmlFor="weight">الوزن (كجم)</label>
+                <Input
                   id="weight"
-                  name="weight"
                   type="number"
-                  value={formData.weight}
-                  onChange={handleInputChange}
+                  {...register("weight", {
+                    valueAsNumber: true,
+                  })}
                   placeholder="0"
                   min="0"
                   step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                  className="mt-1 bg-background/50 border-border/20"
                 />
               </div>
             </div>
@@ -597,69 +731,73 @@ const ProductForm: React.FC = () => {
             {/* Price and Discount Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="priceBeforeDiscount" className="block text-sm font-medium text-gray-700 mb-1">قيمة المنتج*</label>
-                <input
+                <label htmlFor="priceBeforeDiscount">قيمة المنتج*</label>
+                <Input
                   id="priceBeforeDiscount"
-                  name="priceBeforeDiscount"
                   type="number"
-                  value={formData.priceBeforeDiscount}
-                  onChange={handleInputChange}
+                  {...register("priceBeforeDiscount", {
+                    valueAsNumber: true,
+                  })}
                   placeholder="0.00"
                   min="0"
                   step="0.01"
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${
-                    errors.priceBeforeDiscount ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`mt-1 bg-background/50 ${formState.errors.priceBeforeDiscount ? "border-red-500" : "border-border/20"}`}
                 />
-                {errors.priceBeforeDiscount && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4" />
-                    {errors.priceBeforeDiscount}
+                {formState.errors.priceBeforeDiscount && (
+                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {formState.errors.priceBeforeDiscount.message}
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="discountAmount" className="block text-sm font-medium text-gray-700 mb-1">قيمة الخصم</label>
-                <input
+                <label htmlFor="discountAmount">قيمة الخصم</label>
+                <Input
                   id="discountAmount"
-                  name="discountAmount"
                   type="number"
-                  value={formData.discountAmount}
-                  onChange={handleInputChange}
+                  {...register("discountAmount", {
+                    valueAsNumber: true,
+                    onChange: (e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      setValue("discountAmount", value);
+                    }
+                  })}
                   placeholder="0.00"
                   min="0"
                   step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                  className="mt-1 bg-background/50 border-border/20"
                 />
               </div>
 
               <div>
-                <label htmlFor="discountPercentage" className="block text-sm font-medium text-gray-700 mb-1">نسبة الخصم %</label>
-                <input
+                <label htmlFor="discountPercentage">نسبة الخصم %</label>
+                <Input
                   id="discountPercentage"
-                  name="discountPercentage"
                   type="number"
-                  value={formData.discountPercentage}
-                  onChange={handleInputChange}
+                  {...register("discountPercentage", {
+                    valueAsNumber: true,
+                    onChange: (e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      setValue("discountPercentage", value);
+                    }
+                  })}
                   placeholder="0"
                   min="0"
                   max="100"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                  className="mt-1 bg-background/50 border-border/20"
                 />
               </div>
             </div>
 
             {/* Warehouse Selection */}
             <div>
-              <label htmlFor="warehouse" className="block text-sm font-medium text-gray-700 mb-1">المخزن *</label>
+              <label htmlFor="warehouse">المخزن *</label>
               <select
                 id="warehouse"
-                name="warehouse"
-                value={formData.warehouse}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${
-                  errors.warehouse ? "border-red-500" : "border-gray-300"
+                {...register("warehouse")}
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background/50 text-foreground mt-1 ${
+                  formState.errors.warehouse ? "border-red-500" : "border-border/20 focus:border-primary/50"
                 }`}
               >
                 <option value="">اختر مخزن</option>
@@ -669,38 +807,38 @@ const ProductForm: React.FC = () => {
                   </option>
                 ))}
               </select>
-              {errors.warehouse && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4" />
-                  {errors.warehouse}
+              {formState.errors.warehouse && (
+                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {formState.errors.warehouse.message}
                 </p>
               )}
             </div>
 
             {/* Final Price Display */}
-            <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+            <div className="bg-background/50 p-4 rounded-md border border-border/20">
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">السعر الأصلي:</span>
-                  <span className="text-gray-600">
-                    {formData.priceBeforeDiscount.toFixed(2)} ر.س
+                  <span className="font-medium text-foreground">السعر الأصلي:</span>
+                  <span className="text-muted-foreground">
+                    {priceBeforeDiscount?.toFixed(2)} ر.س
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">السعر بعد الخصم:</span>
-                  <span className="text-lg font-bold text-blue-600">
-                    {(formData.priceBeforeDiscount - formData.discountAmount).toFixed(2)} ر.س
+                  <span className="font-medium text-foreground">السعر بعد الخصم:</span>
+                  <span className="text-lg font-bold text-primary">
+                    {(priceBeforeDiscount - (discountAmount || 0)).toFixed(2)} ر.س
                   </span>
                 </div>
-                {formData.showDiscount && formData.discountAmount > 0 && (
+                {watch("showDiscount") && discountAmount && discountAmount > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-700">قيمة الخصم:</span>
+                    <span className="font-medium text-foreground">قيمة الخصم:</span>
                     <div className="flex items-center gap-2">
                       <span className="text-red-600">
-                        {formData.discountAmount.toFixed(2)} ر.س
+                        {discountAmount?.toFixed(2)} ر.س
                       </span>
                       <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">
-                        {formData.discountPercentage.toFixed(0)}%
+                        {discountPercentage?.toFixed(0)}%
                       </span>
                     </div>
                   </div>
@@ -708,191 +846,167 @@ const ProductForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Quantity and Order Limits */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Category and Quantity */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">الكمية *</label>
-                <input
-                  id="quantity"
-                  name="quantity"
-                  type="number"
-                  value={formData.quantity}
-                  onChange={handleInputChange}
-                  placeholder="0"
-                  min="0"
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${
-                    errors.quantity ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {errors.quantity && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4" />
-                    {errors.quantity}
+                <label htmlFor="category">التصنيف *</label>
+                <div className="flex gap-2 mt-1">
+                  <select
+                    id="category"
+                    {...register("category")}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background/50 text-foreground ${
+                      formState.errors.category ? "border-red-500" : "border-border/20 focus:border-primary/50"
+                    }`}
+                  >
+                    <option value="">اختر تصنيف</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {formState.errors.category && (
+                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {formState.errors.category.message}
                   </p>
                 )}
               </div>
 
-              <div>
-                <label htmlFor="minOrder" className="block text-sm font-medium text-gray-700 mb-1">الحد الأدنى للطلب</label>
-                <input
-                  id="minOrder"
-                  name="minOrder"
-                  type="number"
-                  value={formData.minOrder}
-                  onChange={handleInputChange}
-                  placeholder="1"
-                  min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-                />
-              </div>
+           {/* Quantity and Order Limits */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div>
+    <label htmlFor="quantity">الكمية *</label>
+    <Input
+      id="quantity"
+      type="number"
+      {...register("quantity", {
+        valueAsNumber: true,
+      })}
+      placeholder="0"
+      min="0"
+      className={`mt-1 bg-background/50 ${formState.errors.quantity ? "border-red-500" : "border-border/20"}`}
+    />
+    {formState.errors.quantity && (
+      <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+        <AlertCircle className="w-4 h-4" />
+        {formState.errors.quantity.message}
+      </p>
+    )}
+  </div>
 
-              <div>
-                <label htmlFor="maxOrder" className="block text-sm font-medium text-gray-700 mb-1">الحد الأقصى للطلب</label>
-                <input
-                  id="maxOrder"
-                  name="maxOrder"
-                  type="number"
-                  value={formData.maxOrder}
-                  onChange={handleInputChange}
-                  placeholder="100"
-                  min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-                />
-              </div>
-            </div>
+  <div>
+    <label htmlFor="minOrder">الحد الأدنى للطلب</label>
+    <Input
+      id="minOrder"
+      type="number"
+      {...register("minOrder", {
+        valueAsNumber: true,
+      })}
+      placeholder="1"
+      min="1"
+      className="mt-1 bg-background/50 border-border/20"
+    />
+    {formState.errors.minOrder && (
+      <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+        <AlertCircle className="w-4 h-4" />
+        {formState.errors.minOrder.message}
+      </p>
+    )}
+  </div>
 
-            {/* Category Selection */}
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">التصنيف *</label>
-              <div className="flex gap-2">
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${
-                    errors.category ? "border-red-500" : "border-gray-300"
-                  }`}
-                >
-                  <option value="">اختر تصنيف</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {errors.category && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4" />
-                  {errors.category}
-                </p>
-              )}
+  <div>
+    <label htmlFor="maxOrder">الحد الأقصى للطلب</label>
+    <Input
+      id="maxOrder"
+      type="number"
+      {...register("maxOrder", {
+        valueAsNumber: true,
+      })}
+      placeholder="100"
+      min="1"
+      className="mt-1 bg-background/50 border-border/20"
+    />
+    {formState.errors.maxOrder && (
+      <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+        <AlertCircle className="w-4 h-4" />
+        {formState.errors.maxOrder.message}
+      </p>
+    )}
+  </div>
+</div>
             </div>
 
             {/* Add New Category */}
-            <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-              <label className="block text-sm font-medium text-gray-700 mb-1">إضافة تصنيف جديد</label>
-              <div className="flex gap-2">
-                <input
+            <div className="bg-background/50 p-3 rounded-md border border-border/20">
+              <label className="text-sm font-medium text-foreground mb-1">إضافة تصنيف جديد</label>
+              <div className="flex gap-2 mt-1">
+                <Input
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="أدخل اسم تصنيف جديد"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  className="flex-1 bg-background/50 border-border/20"
                 />
-                <button
+                <Button
                   type="button"
                   onClick={addCategory}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                  className="whitespace-nowrap bg-green-600 hover:bg-green-600/90"
                 >
                   إضافة تصنيف
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* Tag Input */}
             <div>
-              <label htmlFor="tag" className="block text-sm font-medium text-gray-700 mb-1">العلامة (Tag)</label>
-              <input
+              <label htmlFor="tag">العلامة (Tag)</label>
+              <Input
                 id="tag"
-                name="tag"
-                value={formData.tag}
-                onChange={handleInputChange}
+                {...register("tag")}
                 placeholder="أدخل علامة للمنتج (اختياري)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                className="mt-1 bg-background/50 border-border/20"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">الوصف الكامل</label>
+              <label htmlFor="description">الوصف الكامل</label>
               <textarea
                 id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
+                {...register("description")}
                 placeholder="أدخل وصفاً كاملاً للمنتج"
                 rows={5}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                className="w-full px-3 py-2 border border-border/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 bg-background/50 text-foreground mt-1"
               />
             </div>
 
             {/* Short Description */}
             <div>
-              <label htmlFor="shortDescription" className="block text-sm font-medium text-gray-700 mb-1">وصف مختصر</label>
+              <label htmlFor="shortDescription">وصف مختصر</label>
               <textarea
                 id="shortDescription"
-                name="shortDescription"
-                value={formData.shortDescription}
-                onChange={handleInputChange}
+                {...register("shortDescription")}
                 placeholder="أدخل وصفاً مختصراً للمنتج"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                className="w-full px-3 py-2 border border-border/20 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 bg-background/50 text-foreground mt-1"
               />
             </div>
 
             {/* Product Toggles */}
-            <div className="space-y-3">
-              <h3 className="font-medium text-gray-700">إعدادات المنتج</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  { name: "showDiscount", label: "إظهار الخصم", icon: <Tag className="h-4 w-4" /> },
-                  { name: "showQuantity", label: "إظهار الكمية", icon: <Box className="h-4 w-4" /> },
-                  { name: "showRatings", label: "إظهار التقييمات", icon: <Star className="h-4 w-4" /> },
-                  { name: "showTag", label: "إظهار العلامة", icon: <Tag className="h-4 w-4" /> },
-                ].map((toggle) => (
-                  <div key={toggle.name} className="flex items-center gap-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-                    <div className="flex items-center justify-center p-2 rounded-full bg-blue-100 text-blue-600">
-                      {toggle.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          name={toggle.name}
-                          checked={formData[toggle.name as keyof typeof formData] as boolean}
-                          onChange={handleInputChange}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <label htmlFor={toggle.name} className="text-gray-700">{toggle.label}</label>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ProductToggles control={control} />
 
             {/* Similar Products Section */}
             <div className="space-y-3">
               <div 
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-md border border-gray-200 cursor-pointer"
+                className="flex items-center justify-between p-3 bg-background/50 rounded-md border border-border/20 cursor-pointer"
                 onClick={() => setShowSimilarProducts(!showSimilarProducts)}
               >
                 <div className="flex items-center gap-4">
-                  <label className="text-gray-700">المنتجات المشابهة</label>
-                  {formData.similarProducts.length > 0 && (
-                    <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                      {formData.similarProducts.length} منتج
+                  <label htmlFor="similarProducts">المنتجات المشابهة</label>
+                  {similarProducts.length > 0 && (
+                    <span className="text-xs bg-primary text-white px-2 py-1 rounded-full">
+                      {similarProducts.length} منتج
                     </span>
                   )}
                 </div>
@@ -900,51 +1014,53 @@ const ProductForm: React.FC = () => {
               </div>
 
               {showSimilarProducts && (
-                <div className="bg-gray-50 p-4 rounded-md border border-gray-200 space-y-3">
-                  <input
+                <div className="bg-background/50 p-4 rounded-md border border-border/20 space-y-3">
+                  <Input
                     placeholder="ابحث عن منتجات..."
                     value={similarProductsSearch}
                     onChange={(e) => setSimilarProductsSearch(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="bg-background border-border/20"
                   />
                   <div className="max-h-60 overflow-y-auto space-y-2">
                     {filteredProducts.length > 0 ? (
                       filteredProducts.map(product => (
                         <div 
                           key={product._id} 
-                          className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                          className="flex items-center gap-3 p-2 hover:bg-background/30 rounded cursor-pointer"
                           onClick={() => toggleSimilarProduct(product._id)}
                         >
                           <div className="h-10 w-10 rounded-md overflow-hidden relative flex-shrink-0">
                             {getMainImage(product) ? (
-                              <img
-                                src={`http://localhost:4000/uploads/${getMainImage(product)?.url}`}
+                              <Image
+                                width={40}
+                                height={40}
+                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/uploads/${getMainImage(product).url}`}
                                 alt={product.name}
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <div className="h-full w-full bg-gray-200 flex items-center justify-center">
-                                <ImageIcon className="h-4 w-4 text-gray-500" />
+                              <div className="h-full w-full bg-background/50 flex items-center justify-center">
+                                <ImageIcon className="h-4 w-4 text-muted-foreground" />
                               </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-medium text-gray-900 truncate">{product.name}</h3>
-                            <p className="text-xs text-gray-500">
-                              {product.priceBeforeDiscount.toFixed(2)} ر.س
+                            <h3 className="text-sm font-medium text-foreground truncate">{product.name}</h3>
+                            <p className="text-xs text-muted-foreground">
+                              {product.priceBeforeDiscount?.toFixed(2)} ر.س
                             </p>
                           </div>
                           <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            formData.similarProducts.includes(product._id) 
-                              ? 'bg-blue-600 border-blue-600 text-white' 
-                              : 'border-gray-300 text-transparent'
+                            similarProducts.includes(product._id) 
+                              ? 'bg-primary border-primary text-white' 
+                              : 'border-border/30 text-transparent'
                           }`}>
-                            <CheckCircle className="h-3 w-3" />
+                            <Check className="h-3 w-3" />
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-500 text-center py-4">
+                      <p className="text-sm text-muted-foreground text-center py-4">
                         لا توجد منتجات متاحة
                       </p>
                     )}
@@ -954,181 +1070,170 @@ const ProductForm: React.FC = () => {
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
-              <button
+            <div className="flex justify-end gap-4 pt-6 border-t border-border/20">
+              <Button
                 type="button"
                 onClick={handleNewProduct}
                 disabled={isSubmitting}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+                variant="outline"
+                className="border-border/20 hover:bg-background/50"
               >
                 إلغاء
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={isSubmitting || previews.length === 0}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader className="h-4 w-4 animate-spin" />
+                    <Loader className="h-4 w-4 inline mr-2 animate-spin" />
                     جاري الحفظ...
                   </>
                 ) : (
                   editingProduct ? "تحديث المنتج" : "حفظ المنتج"
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
 
         {/* Left Side - Product Settings */}
-        <div className="lg:w-1/3 bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 h-fit sticky top-6">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-800">إعدادات المنتج</h2>
+        <div className="lg:w-1/3 bg-card rounded-lg shadow overflow-hidden border border-border/20 h-fit sticky top-6">
+          <div className="p-4 border-b border-border/20">
+            <h2 className="text-lg font-bold text-foreground">إعدادات المنتج</h2>
           </div>
 
           <div className="p-6 space-y-6">
             {/* حالة المنتج */}
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-background/50 to-background rounded-lg border border-border/20">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-green-100 text-green-600">
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-700">حالة المنتج</h3>
-                  <p className="text-sm text-gray-500">
-                    {formData.isActive ? 'المنتج ظاهر للعملاء' : 'المنتج مخفي'}
+                  <h3 className="font-medium text-foreground">حالة المنتج</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {watch('isActive') ? 'المنتج ظاهر للعملاء' : 'المنتج مخفي'}
                   </p>
                 </div>
               </div>
-              <input
-                type="checkbox"
-                name="isActive"
-                checked={formData.isActive}
-                onChange={handleInputChange}
-                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              <Switch 
+                checked={watch('isActive')} 
+                onChange={(checked) => setValue('isActive', checked)}
               />
             </div>
 
             {/* يتطلب شحن */}
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-background/50 to-background rounded-lg border border-border/20">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-blue-100 text-blue-600">
                   <Truck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-700">يتطلب شحن</h3>
-                  <p className="text-sm text-gray-500">
-                    {formData.requiresShipping ? 'يحتاج إلى شحن' : 'لا يتطلب شحن'}
+                  <h3 className="font-medium text-foreground">يتطلب شحن</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {watch('requiresShipping') ? 'يحتاج إلى شحن' : 'لا يتطلب شحن'}
                   </p>
                 </div>
               </div>
-              <input
-                type="checkbox"
-                name="requiresShipping"
-                checked={formData.requiresShipping}
-                onChange={handleInputChange}
-                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              <Switch 
+                checked={watch('requiresShipping')} 
+                onChange={(checked) => setValue('requiresShipping', checked)}
               />
             </div>
 
             {/* معفي من الضريبة */}
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-background/50 to-background rounded-lg border border-border/20">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-purple-100 text-purple-600">
                   <ShieldOff className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-700">معفي من الضريبة</h3>
-                  <p className="text-sm text-gray-500">
-                    {formData.taxExempt ? 'معفي من الضريبة' : 'خاضع للضريبة'}
+                  <h3 className="font-medium text-foreground">معفي من الضريبة</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {watch('taxExempt') ? 'معفي من الضريبة' : 'خاضع للضريبة'}
                   </p>
                 </div>
               </div>
-              <input
-                type="checkbox"
-                name="taxExempt"
-                checked={formData.taxExempt}
-                onChange={handleInputChange}
-                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              <Switch 
+                checked={watch('taxExempt')} 
+                onChange={(checked) => setValue('taxExempt', checked)}
               />
             </div>
 
             {/* جدولة الخصم */}
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <div className="p-4 bg-gradient-to-r from-background/50 to-background rounded-lg border border-border/20">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-gray-700 flex items-center gap-2">
+                <h3 className="font-medium text-foreground flex items-center gap-2">
                   <Tag className="h-5 w-5 text-yellow-500" />
                   جدولة الخصم
                 </h3>
-                <input
-                  type="checkbox"
-                  name="showDiscount"
-                  checked={formData.showDiscount}
-                  onChange={handleInputChange}
-                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                <Switch 
+                  checked={watch('showDiscount')} 
+                  onChange={(checked) => setValue('showDiscount', checked)}
                 />
               </div>
 
-              {formData.showDiscount && (
+              {watch('showDiscount') && (
                 <div className="space-y-4 mt-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                       تاريخ البداية
                     </label>
-                    <input
+                    <Input
                       type="datetime-local"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      className="bg-background border-border/20"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                       تاريخ النهاية
                     </label>
-                    <input
+                    <Input
                       type="datetime-local"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      className="bg-background border-border/20"
                     />
                   </div>
 
                   <div className="flex gap-2">
-                    <button type="button" className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                    <Button variant="outline" className="flex-1 border-border/20">
                       إضافة خصم
-                    </button>
-                    <button type="button" className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors">
+                    </Button>
+                    <Button className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600">
                       حفظ الجدولة
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
             </div>
 
             {/* المنتجات المشابهة */}
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <div className="p-4 bg-gradient-to-r from-background/50 to-background rounded-lg border border-border/20">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-purple-100 text-purple-600">
                     <Star className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-700">المنتجات المشابهة</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="font-medium text-foreground">المنتجات المشابهة</h3>
+                    <p className="text-sm text-muted-foreground">
                       {showSimilarProducts ? 'وضع التعديل مفعل' : 'انقر لتفعيل وضع التعديل'}
                     </p>
                   </div>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={showSimilarProducts}
-                  onChange={() => setShowSimilarProducts(!showSimilarProducts)}
-                  className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                <Switch 
+                  checked={showSimilarProducts} 
+                  onChange={(checked) => {
+                    setShowSimilarProducts(checked);
+                  }}
                 />
               </div>
 
-              {formData.similarProducts.length > 0 ? (
+              {similarProducts.length > 0 ? (
                 <div className="space-y-3">
-                  {formData.similarProducts.map(productId => {
+                  {similarProducts.map(productId => {
                     const product = products.find(p => p._id === productId);
                     if (!product) return null;
                     
@@ -1137,30 +1242,32 @@ const ProductForm: React.FC = () => {
                         key={productId} 
                         className={`group flex items-center gap-3 p-2 rounded cursor-pointer transition-all ${
                           showSimilarProducts 
-                            ? 'hover:bg-white active:scale-[0.98]' 
+                            ? 'hover:bg-background/30 active:scale-[0.98]' 
                             : 'opacity-90 hover:opacity-100'
                         }`}
                       >
-                        <div className="h-12 w-12 rounded-md overflow-hidden relative flex-shrink-0 border border-gray-200">
+                        <div className="h-12 w-12 rounded-md overflow-hidden relative flex-shrink-0 border border-border/20">
                           {getMainImage(product) ? (
-                            <img
-                              src={`http://localhost:4000/uploads/${getMainImage(product)?.url}`}
+                            <Image
+                              width={48}
+                              height={48}
+                              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/uploads/${getMainImage(product).url}`}
                               alt={product.name}
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="h-full w-full bg-gray-200 flex items-center justify-center">
-                              <ImageIcon className="h-5 w-5 text-gray-500" />
+                            <div className="h-full w-full bg-background/50 flex items-center justify-center">
+                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-medium text-gray-700 truncate">{product.name}</h3>
-                          <p className="text-xs text-gray-500">
-                            {product.priceBeforeDiscount.toFixed(2)} ر.س
-                            {product.showDiscount && (product.priceBeforeDiscount - product.priceAfterDiscount) > 0 && (
+                          <h3 className="text-sm font-medium text-foreground truncate">{product.name}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {product.priceBeforeDiscount?.toFixed(2)} ر.س
+                            {product.showDiscount && product.discountAmount > 0 && (
                               <span className="text-red-500 mr-2">
-                                (خصم {(product.priceBeforeDiscount - product.priceAfterDiscount).toFixed(2)} ر.س)
+                                (خصم {product.discountAmount?.toFixed(2)} ر.س)
                               </span>
                             )}
                           </p>
@@ -1168,13 +1275,17 @@ const ProductForm: React.FC = () => {
                         
                         {showSimilarProducts && (
                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              type="button"
-                              className="text-red-500 hover:bg-red-50 p-1 rounded"
-                              onClick={() => toggleSimilarProduct(productId)}
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-red-500 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSimilarProduct(productId);
+                              }}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -1183,62 +1294,60 @@ const ProductForm: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     {showSimilarProducts ? 'قم بإضافة منتجات مشابهة' : 'لا توجد منتجات مشابهة'}
                   </p>
                 </div>
               )}
             </div>
-
             {/* Order Limits Summary */}
-            <div className="flex justify-between items-center text-sm text-gray-500">
-              <span>حدود الطلب:</span>
-              <span>
-                {formData.minOrder} - {formData.maxOrder}
-              </span>
-            </div>
+<div className="flex justify-between items-center">
+  <span className="text-sm text-muted-foreground">حدود الطلب:</span>
+  <span className="text-sm">
+    {watch('minOrder') || 1} - {watch('maxOrder') || 100}
+  </span>
+</div>
 
             {/* ملخص السعر */}
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-              <h3 className="font-medium text-gray-700 flex items-center gap-2 mb-3">
+            <div className="p-4 bg-gradient-to-r from-background/50 to-background rounded-lg border border-border/20">
+              <h3 className="font-medium text-foreground flex items-center gap-2 mb-3">
                 <Gauge className="h-5 w-5 text-green-500" />
                 ملخص السعر
               </h3>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">السعر الأصلي:</span>
-                  <span className="font-medium">{formData.priceBeforeDiscount.toFixed(2)} ر.س</span>
+                  <span className="text-sm text-muted-foreground">السعر الأصلي:</span>
+                  <span className="font-medium">{priceBeforeDiscount?.toFixed(2)} ر.س</span>
                 </div>
                 
-                {formData.showDiscount && formData.discountAmount > 0 && (
+                {watch('showDiscount') && discountAmount > 0 && (
                   <>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">قيمة الخصم:</span>
-                      <span className="text-red-500">-{formData.discountAmount.toFixed(2)} ر.س</span>
+                      <span className="text-sm text-muted-foreground">قيمة الخصم:</span>
+                      <span className="text-red-500">-{discountAmount?.toFixed(2)} ر.س</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">نسبة الخصم:</span>
-                      <span className="text-red-500">{formData.discountPercentage.toFixed(0)}%</span>
+                      <span className="text-sm text-muted-foreground">نسبة الخصم:</span>
+                      <span className="text-red-500">{discountPercentage?.toFixed(0)}%</span>
                     </div>
                   </>
                 )}
 
-                <div className="border-t border-gray-200 pt-2 mt-2">
+                <div className="border-t border-border/20 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">السعر النهائي:</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {(formData.priceBeforeDiscount - formData.discountAmount).toFixed(2)} ر.س
+                    <span className="text-lg font-bold text-primary">
+                      {(priceBeforeDiscount - (discountAmount || 0)).toFixed(2)} ر.س
                     </span>
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default ProductForm;
+}

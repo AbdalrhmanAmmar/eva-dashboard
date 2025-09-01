@@ -60,7 +60,7 @@ export const getProductsByWarehouse = async (
   warehouseId: string
 ): Promise<{ success: boolean; products: Product[] }> => {
   try {
-    const response = await api.get(`/warehouses/${warehouseId}/products`);
+    const response = await api.get(`/warehouses/products/${warehouseId}`);
     return response.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "فشل في جلب المنتجات");

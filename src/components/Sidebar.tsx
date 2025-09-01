@@ -88,8 +88,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
 <div
-  className={`bg-white border-l border-border h-screen transition-all duration-300 ease-in-out w-64 flex flex-col shadow-soft fixed lg:static z-50
-    ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:w-0'}`}
+  className={`bg-white border-l border-border h-screen transition-all duration-300 ease-in-out w-64 flex flex-col shadow-soft fixed top-0 lg:static z-50
+    ${isMobileMenuOpen ? 'translate-x-0 fixed' : '-translate-x-full lg:w-0'}`}
 >
       {/* Header */}
       <div className="p-6 border-b border-border flex-shrink-0">
