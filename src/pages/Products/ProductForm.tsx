@@ -7,15 +7,15 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Input } from "../../components/ui/input"; 
-import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch"; 
-import { Loader, X, Upload, Image as ImageIcon, Plus, Star, Trash2, Edit, AlertCircle, Check, ChevronDown, Package, Barcode, Truck, ShieldOff, Tag, Box, Gauge, Minus, Maximize } from "lucide-react";
+import { Loader, X, Upload, Image as ImageIcon, Plus, Star, Trash2, AlertCircle, Check, ChevronDown, Package, Truck, ShieldOff, Tag, Box, Gauge, Minus, Maximize } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Button } from "../../components/ui/Button";
 import { productAPI } from "../../api/prodcuts";
 import { getAllWarehouses } from "../../api/warehouseAPI";
+import { Label } from "../../components/ui/label";
 
 const { createProduct, getAllProducts, updateProduct, deleteProduct } = productAPI;
 
@@ -135,7 +135,7 @@ const ImageUploader = ({
 
   return (
     <div>
-      <label htmlFor="images">صور المنتج (الحد الأقصى 5 صور)</label>
+      <Label htmlFor="images">صور المنتج (الحد الأقصى 5 صور)</Label>
       <div
         {...getRootProps()}
         className="border-2 border-dashed border-primary/30 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors bg-background/50"
