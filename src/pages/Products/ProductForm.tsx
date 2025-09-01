@@ -12,10 +12,10 @@ import { Loader, X, Upload, Image as ImageIcon, Plus, Star, Trash2, AlertCircle,
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Button } from "../../components/ui/Button";
 import { productAPI } from "../../api/prodcuts";
 import { getAllWarehouses } from "../../api/warehouseAPI";
 import { Label } from "../../components/ui/label";
+import { Button } from "../../components/ui/button";
 
 const { createProduct, getAllProducts, updateProduct, deleteProduct } = productAPI;
 
