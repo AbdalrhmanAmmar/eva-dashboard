@@ -22,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   }, [i18n.language]);
 
   return (
-    <header className="bg-white border-b border-border px-6 py-4 sticky top-0 z-40 shadow-soft">
+    <header className="bg-white border-b border-border px-6 pt-4 sticky top-0 z-40 shadow-soft">
       <div className="flex items-center justify-between">
         {/* Left Side */}
         <div className="flex items-center gap-4">

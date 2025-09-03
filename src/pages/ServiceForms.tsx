@@ -71,12 +71,12 @@ const ServicesForms: React.FC = () => {
 
       {/* Tabs */}
       <div className="bg-card border border-border rounded-xl p-1 shadow-soft">
-        <div className="flex overflow-x-auto">
+        <div className="flex justify-between overflow-x-auto">
           {serviceTypes.map((service) => (
             <button
               key={service.id}
               onClick={() => setActiveTab(service.id)}
-              className={`px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors rounded-md ${
                 activeTab === service.id
                   ? 'bg-primary text-white'
                   : 'text-muted-foreground hover:bg-secondary/50'

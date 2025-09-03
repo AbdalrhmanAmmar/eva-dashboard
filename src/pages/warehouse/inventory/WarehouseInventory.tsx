@@ -26,6 +26,7 @@ interface Product {
 interface InventoryItem {
   productId: string;
   countedQuantity: number;
+  reservedQuantity: number; // تمت إضافة هذا الحقل
 }
 
 interface InventoryCount {
@@ -51,6 +52,7 @@ interface InventoryCount {
       images?: { url: string }[];
     };
     countedQuantity: number;
+    reservedQuantity: number; // تمت إضافة هذا الحقل
   }[];
 }
 
@@ -65,7 +67,6 @@ const InventoryCountForm = ({
   onSuccess: () => void;
   initialWarehouse?: string;
 }) => {
-//   const { user } = useAuthStore();
   const [form, setForm] = useState({
     warehouse: initialWarehouse,
     name: "",
@@ -80,9 +81,11 @@ const InventoryCountForm = ({
   const [errorMsg, setErrorMsg] = useState("");
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [bulkCount, setBulkCount] = useState<number | null>(null);
+  const [bulkReserved, setBulkReserved] = useState<number | null>(null);
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilterTab, setActiveFilterTab] = useState<InventoryFilterTab>('all');
+  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     if (form.warehouse) {
@@ -94,15 +97,15 @@ const InventoryCountForm = ({
     setFetchingProducts(true);
     try {
       const { success, products } = await getProductsByWarehouse(form.warehouse);
-      console.log(`success`,success)
       if (success) {
         setProducts(products);
-        console.log(`products,`,products)
         setBulkCount(null);
+        setBulkReserved(null);
         if (form.type === "full") {
           setInventoryItems(products.map(product => ({
             productId: product._id,
-            countedQuantity: 0
+            countedQuantity: 0,
+            reservedQuantity: 0 // استخدام القيمة الافتراضية من المنتج
           })));
         } else {
           setInventoryItems([]);
@@ -125,12 +128,14 @@ const InventoryCountForm = ({
     if (value === "full") {
       setInventoryItems(products.map(product => ({
         productId: product._id,
-        countedQuantity: 0
+        countedQuantity: 0,
+        reservedQuantity:0 // استخدام القيمة الافتراضية من المنتج
       })));
     } else {
       setInventoryItems([]);
     }
     setBulkCount(null);
+    setBulkReserved(null);
     setActiveFilterTab('all');
   };
 
@@ -139,10 +144,32 @@ const InventoryCountForm = ({
       const existingItem = prev.find(item => item.productId === productId);
       if (existingItem) {
         return prev.map(item =>
-          item.productId === productId ? { ...item, countedQuantity: value } : item
+          item.productId === productId ? { ...item, countedQuantity: value, reservedQuantity:value } : item
         );
       } else {
-        return [...prev, { productId, countedQuantity: value }];
+        const product = products.find(p => p._id === productId);
+        return [...prev, { 
+          productId, 
+          countedQuantity: value,
+          reservedQuantity: value
+        }];
+      }
+    });
+  };
+
+  const handleReservedQuantityChange = (productId: string, value: number) => {
+    setInventoryItems(prev => {
+      const existingItem = prev.find(item => item.productId === productId);
+      if (existingItem) {
+        return prev.map(item =>
+          item.productId === productId ? { ...item, reservedQuantity: value } : item
+        );
+      } else {
+        return [...prev, { 
+          productId, 
+          countedQuantity: 0,
+          reservedQuantity: 0,
+        }];
       }
     });
   };
@@ -154,6 +181,8 @@ const InventoryCountForm = ({
   const toggleProductSelection = (productId: string) => {
     setInventoryItems(prev => {
       const existingItem = prev.find(item => item.productId === productId);
+      const product = products.find(p => p._id === productId);
+      
       if (existingItem) {
         return prev.filter(item => item.productId !== productId);
       } else {
@@ -161,7 +190,8 @@ const InventoryCountForm = ({
           ...prev,
           {
             productId,
-            countedQuantity: 0
+            countedQuantity: 0,
+            reservedQuantity: 0
           }
         ];
       }
@@ -174,7 +204,8 @@ const InventoryCountForm = ({
     if (form.type === "full") {
       setInventoryItems(products.map(product => ({
         productId: product._id,
-        countedQuantity: bulkCount
+        countedQuantity: bulkCount,
+        reservedQuantity: bulkCount // الحفاظ على قيمة المحجوز الأصلية
       })));
     } else {
       setInventoryItems(prev =>
@@ -186,64 +217,108 @@ const InventoryCountForm = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'completed') => {
-    e.preventDefault();
+  const applyBulkReserved = () => {
+    if (bulkReserved === null) return;
     
-    if (!form.warehouse) {
-      setErrorMsg("يجب اختيار مخزن");
-      return;
-    }
-
-    if (form.type === "partial" && inventoryItems.length === 0) {
-      setErrorMsg("يجب اختيار منتجات على الأقل للجرد الجزئي");
-      return;
-    }
-
-    setLoading(true);
-    setSuccessMsg("");
-    setErrorMsg("");
-
-    try {
-      const items = form.type === "full" 
-        ? products.map(product => ({
-            product: product._id,
-            countedQuantity: inventoryItems.find(i => i.productId === product._id)?.countedQuantity || 0
-          }))
-        : inventoryItems.map(item => ({
-            product: item.productId,
-            countedQuantity: item.countedQuantity
-          }));
-
-      const response = await createInventoryCount({
-        ...form,
-        items,
-        selectedProducts: form.type === "partial" ? inventoryItems.map(item => item.productId) : [],
-        createdBy: "user.id",
-        status
-      });
-      
-      if (response.success) {
-        setSuccessMsg(status === 'completed' ? "تم إنشاء الجرد بنجاح" : "تم حفظ المسودة بنجاح");
-        if (status === 'completed') {
-          setForm({
-            warehouse: warehouses.length > 0 ? warehouses[0]._id : "",
-            name: "",
-            type: "full",
-            notes: "",
-          });
-          setInventoryItems([]);
-          setBulkCount(null);
-          onSuccess();
-        }
-      } else {
-        setErrorMsg(response.message || "حدث خطأ أثناء إنشاء الجرد");
-      }
-    } catch (error: any) {
-      setErrorMsg(error.message || "حدث خطأ أثناء إنشاء الجرد");
-    } finally {
-      setLoading(false);
+    if (form.type === "full") {
+      setInventoryItems(products.map(product => ({
+        productId: product._id,
+        countedQuantity: 0,
+        reservedQuantity: 0
+      })));
+    } else {
+      setInventoryItems(prev =>
+        prev.map(item => ({
+          ...item,
+          reservedQuantity: bulkReserved
+        }))
+      );
     }
   };
+
+const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'completed') => {
+  e.preventDefault();
+  
+  if (!form.warehouse) {
+    setErrorMsg("يجب اختيار مخزن");
+    return;
+  }
+
+  if (form.type === "partial" && inventoryItems.length === 0) {
+    setErrorMsg("يجب اختيار منتجات على الأقل للجرد الجزئي");
+    return;
+  }
+
+  // تحقق إضافي للجرد المكتمل
+  if (status === 'completed') {
+    const uncountedProducts = products.filter(product => {
+      const item = inventoryItems.find(i => i.productId === product._id);
+      return !item || item.countedQuantity === 0;
+    }).length;
+
+    if (uncountedProducts > 0) {
+      const confirmMessage = `هناك ${uncountedProducts} منتج غير مجرود. هل تريد المتابعة؟`;
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    }
+  }
+
+  setLoading(true);
+  setSuccessMsg("");
+  setErrorMsg("");
+
+  try {
+    const items = form.type === "full" 
+      ? products.map(product => {
+          const item = inventoryItems.find(i => i.productId === product._id);
+          return {
+            product: product._id,
+            countedQuantity: item?.countedQuantity || 0,
+            reservedQuantity: item?.reservedQuantity ||0
+          };
+        })
+      : inventoryItems.map(item => ({
+          product: item.productId,
+          countedQuantity: item.countedQuantity,
+          reservedQuantity: item.reservedQuantity
+        }));
+
+    const response = await createInventoryCount({
+      ...form,
+      items,
+      selectedProducts: form.type === "partial" ? inventoryItems.map(item => item.productId) : [],
+      createdBy: "user.id", // يجب استبدالها بـ user.id الفعلي
+      status,
+      createdAt: date
+    });
+    
+    if (response.success) {
+      setSuccessMsg(status === 'completed' ? "تم إنشاء الجرد بنجاح" : "تم حفظ المسودة بنجاح");
+      
+      // إعادة تعيين النموذج فقط عند إنشاء جرد مكتمل
+      if (status === 'completed') {
+        setForm({
+          warehouse: warehouses.length > 0 ? warehouses[0]._id : "",
+          name: "",
+          type: "full",
+          notes: "",
+        });
+        setInventoryItems([]);
+        setBulkCount(null);
+        setBulkReserved(null);
+        setDate(new Date().toISOString().split('T')[0]);
+        onSuccess(); // استدعاء callback النجاح
+      }
+    } else {
+      setErrorMsg(response.message || "حدث خطأ أثناء إنشاء الجرد");
+    }
+  } catch (error: any) {
+    setErrorMsg(error.message || "حدث خطأ أثناء إنشاء الجرد");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -255,10 +330,14 @@ const InventoryCountForm = ({
       ? products 
       : products.filter(product => 
           inventoryItems.some(item => item.productId === product._id)
-        ).map(product => ({
-          ...product,
-          countedQuantity: inventoryItems.find(item => item.productId === product._id)?.countedQuantity || 0
-        }));
+        ).map(product => {
+          const item = inventoryItems.find(i => i.productId === product._id);
+          return {
+            ...product,
+            countedQuantity: item?.countedQuantity || 0,
+            reservedQuantity: item?.reservedQuantity || 0
+          };
+        });
 
     switch (activeFilterTab) {
       case 'counted':
@@ -301,7 +380,7 @@ const InventoryCountForm = ({
       <h2 className="text-2xl font-bold mb-6 text-gray-900">إنشاء جرد جديد</h2>
       
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="flex flex-col">
             <label className="block mb-2 text-sm font-medium text-gray-700 text-right">
               اسم الجرد
@@ -348,6 +427,8 @@ const InventoryCountForm = ({
               ))}
             </select>
           </div>
+
+        
         </div>
 
         <div>
@@ -398,24 +479,45 @@ const InventoryCountForm = ({
           ) : (
             <div className="space-y-4">
               {form.type === "full" && (
-                <div className="flex items-center gap-4 p-3 bg-gray-100 rounded-md">
-                  <span className="whitespace-nowrap">تطبيق كمية موحدة للكل:</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={bulkCount ?? ""}
-                    onChange={(e) => setBulkCount(parseInt(e.target.value) || null)}
-                    className="w-24 px-2 py-1 border border-gray-300 rounded"
-                    placeholder="0"
-                  />
-                  <button
-                    type="button"
-                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
-                    onClick={applyBulkCount}
-                    disabled={bulkCount === null}
-                  >
-                    تطبيق
-                  </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-gray-100 rounded-md">
+                  <div className="flex items-center gap-4">
+                    <span className="whitespace-nowrap">تطبيق كمية موحدة للكل:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={bulkCount ?? ""}
+                      onChange={(e) => setBulkCount(parseInt(e.target.value) || null)}
+                      className="w-24 px-2 py-1 border border-gray-300 rounded"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+                      onClick={applyBulkCount}
+                      disabled={bulkCount === null}
+                    >
+                      تطبيق
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="whitespace-nowrap">تطبيق محجوز موحد للكل:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={bulkReserved ?? ""}
+                      onChange={(e) => setBulkReserved(parseInt(e.target.value) || null)}
+                      className="w-24 px-2 py-1 border border-gray-300 rounded"
+                      placeholder="0"
+                    />
+                    <button
+                      type="button"
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+                      onClick={applyBulkReserved}
+                      disabled={bulkReserved === null}
+                    >
+                      تطبيق
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -507,8 +609,9 @@ const InventoryCountForm = ({
                       {filteredProductsToShow.map((product) => {
                         const countedItem = inventoryItems.find(item => item.productId === product._id);
                         const countedQuantity = countedItem?.countedQuantity || 0;
+                        const reservedQuantity = countedItem?.reservedQuantity || product.reservedQuantity;
                         const isMatched = countedQuantity === product.quantity;
-                        const netInventory = countedQuantity - product.reservedQuantity;
+                        const netInventory = countedQuantity - reservedQuantity;
                         const shortage = Math.max(0, (product.quantity - product.reservedQuantity) - countedQuantity);
                         const shortageCost = Math.max(0, shortage * product.costPrice).toFixed(2);
                         
@@ -529,7 +632,7 @@ const InventoryCountForm = ({
                             <td className="px-3 py-2 text-center">
                               {product.images?.[0] && (
                                 <img
-                                  src={`http://localhost:4000/uploads/product/${product.images[0].url}`}
+                                  src={`/uploads/product/${product.images[0].url}`}
                                   alt={product.name}
                                   width={48}
                                   height={48}
@@ -553,16 +656,24 @@ const InventoryCountForm = ({
                             </td>
                             
                             <td className="px-3 py-2 text-center">
-                              <div className="flex flex-col items-center">
-                                <span className="font-medium text-blue-600">{product.reservedQuantity}</span>
-                                <span className="text-xs text-gray-500">محجوز</span>
-                              </div>
+                              <input
+                                type="number"
+                                min="0"
+                                value={reservedQuantity}
+                                onChange={(e) => 
+                                  handleReservedQuantityChange(
+                                    product._id, 
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                              />
                             </td>
                             
                             <td className="px-3 py-2 text-center">
                               <div className="flex flex-col items-center">
                                 <span className="font-medium text-purple-600">
-                                  {product.quantity - product.reservedQuantity}
+                                  {product.quantity - reservedQuantity}
                                 </span>
                                 <span className="text-xs text-gray-500">متوقع</span>
                               </div>
@@ -623,7 +734,7 @@ const InventoryCountForm = ({
                             
                             <td className="px-3 py-2 text-center">
                               <div className="flex flex-col items-center">
-                                <span className="font-medium">{product.quantity - product.reservedQuantity}</span>
+                                <span className="font-medium">{product.quantity - reservedQuantity}</span>
                                 <span className="text-xs text-gray-500">بعد الخصم</span>
                               </div>
                             </td>
@@ -674,60 +785,62 @@ const InventoryCountForm = ({
           </div>
         )}
 
-        <div className="flex justify-end gap-4">
-          <button
-            type="button"
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
-            onClick={() => {
-              setForm({
-                warehouse: warehouses.length > 0 ? warehouses[0]._id : "",
-                name: "",
-                type: "full",
-                notes: "",
-              });
-              setInventoryItems([]);
-              setBulkCount(null);
-              setErrorMsg("");
-              setSuccessMsg("");
-              setActiveFilterTab('all');
-            }}
-          >
-            إلغاء
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:bg-gray-400"
-            onClick={(e) => handleSubmit(e, 'draft')}
-            disabled={loading || (form.type === "partial" && inventoryItems.length === 0)}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin mr-2 inline" size={16} />
-                جاري الحفظ...
-              </>
-            ) : (
-              "حفظ كمسودة"
-            )}
-          </button>
-          <button
-            type="button"
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400"
-            onClick={(e) => handleSubmit(e, 'completed')}
-            disabled={loading || (form.type === "partial" && inventoryItems.length === 0)}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin mr-2 inline" size={16} />
-                جاري الإنشاء...
-              </>
-            ) : (
-              <>
-                <Plus size={16} className="mr-2 inline" />
-                إنشاء الجرد
-              </>
-            )}
-          </button>
-        </div>
+      <div className="flex justify-end gap-4">
+  <button
+    type="button"
+    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+    onClick={() => {
+      setForm({
+        warehouse: warehouses.length > 0 ? warehouses[0]._id : "",
+        name: "",
+        type: "full",
+        notes: "",
+      });
+      setInventoryItems([]);
+      setBulkCount(null);
+      setBulkReserved(null);
+      setErrorMsg("");
+      setSuccessMsg("");
+      setActiveFilterTab('all');
+      setDate(new Date().toISOString().split('T')[0]);
+    }}
+  >
+    إلغاء
+  </button>
+  <button
+    type="button"
+    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:bg-gray-400"
+    onClick={(e) => handleSubmit(e, 'draft')}
+    disabled={loading || (form.type === "partial" && inventoryItems.length === 0)}
+  >
+    {loading ? (
+      <>
+        <Loader2 className="animate-spin mr-2 inline" size={16} />
+        جاري الحفظ...
+      </>
+    ) : (
+      "حفظ كمسودة"
+    )}
+  </button>
+  <button
+    type="button"
+    className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400"
+    onClick={(e) => handleSubmit(e, 'completed')}
+    disabled={loading || (form.type === "partial" && inventoryItems.length === 0)}
+  >
+    {loading ? (
+      <>
+        <Loader2 className="animate-spin mr-2 inline" size={16} />
+        جاري الإنشاء...
+      </>
+    ) : (
+      <>
+        <Plus size={16} className="mr-2 inline" />
+        إنشاء الجرد
+      </>
+    )}
+  </button>
+</div>
       </form>
 
       {showProductSelector && (
@@ -759,6 +872,7 @@ const InventoryCountForm = ({
                     <th className="px-3 py-2 text-right">اسم المنتج</th>
                     <th className="px-3 py-2 text-right">SKU</th>
                     <th className="px-3 py-2 text-right">الكمية الحالية</th>
+                    <th className="px-3 py-2 text-right">المحجوز</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -782,7 +896,8 @@ const InventoryCountForm = ({
                         <td className="px-3 py-2">
                           {product.images?.[0] && (
                             <img
-src={getFileUrl(`/uploads/product/${product.images[0]?.url}`)}                              alt={product.name}
+                              src={`/uploads/product/${product.images[0]?.url}`}
+                              alt={product.name}
                               width={40}
                               height={40}
                               className="rounded object-cover"
@@ -792,6 +907,7 @@ src={getFileUrl(`/uploads/product/${product.images[0]?.url}`)}                  
                         <td className="px-3 py-2">{product.name}</td>
                         <td className="px-3 py-2">{product.sku}</td>
                         <td className="px-3 py-2 text-right">{product.quantity}</td>
+                        <td className="px-3 py-2 text-right">{product.reservedQuantity}</td>
                       </tr>
                     );
                   })}

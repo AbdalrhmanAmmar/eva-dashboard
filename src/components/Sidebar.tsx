@@ -17,7 +17,8 @@ import {
   Plus,
   ClipboardList,
   X,
-  ChevronDown
+  ChevronDown,
+  Move3d
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -40,6 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { icon: Home, label: t('sidebar.dashboard'), path: '/' },
     { icon: BarChart3, label: t('sidebar.analytics'), path: '/analytics' },
     { icon: BarChart3, label: "العملاء", path: '/users' },
+    { icon: BarChart3, label: "العروض", path: '/offers' },
     { icon: TrendingUp, label: t('sidebar.metaAnalytics'), path: '/meta-analytics' },
     { icon: MessageSquare, label: t('sidebar.messages'), path: '/messages' },
     { icon: Smartphone, label: t('sidebar.smsMessages'), path: '/sms-messages' },
@@ -49,7 +51,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const warehouseItems = [
     { icon: Warehouse, label: t('sidebar.viewWarehouses'), path: '/warehouse-management' },
     { icon: Package, label: t('sidebar.quantityManagement'), path: '/inventory-management' },
-    { icon: ClipboardList, label: t('sidebar.inventoryCount'), path: '/warehouse-inventory' },
+    { icon: ClipboardList, label: t('sidebar.inventoryCount'), path: '/inventory-show' },
+    { icon: Move3d , label:"نقل كميات مخازن", path: '/transfer-quantities' },
     { icon: ArrowUpDown, label: t('sidebar.priority'), path: '/warehouse-priority' },
   ];
 

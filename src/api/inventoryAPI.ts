@@ -35,42 +35,79 @@ export const createInventoryCount = async (
 
 
 // 2. جلب كل الجردات الخاصة بالمستخدم الحالي
-export const getMyInventoryCounts = async (): Promise<{
-  success: boolean;
-  count: number;
-  data: InventoryCount[];
-}> => {
-  try {
-    const response = await api.get("/inventories");
-    return response.data;
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || "فشل في جلب الجردات");
-  }
+export interface InventoryItem {
+  product: {
+    _id: string;
+    name: string;
+    quantity: number;
+    reservedQuantity: number;
+    costPrice: number;
+    sku:string
+    price: number;
+    images: string[];
+  };
+  countedQuantity: number;
+  reservedQuantity: number;
+}
+
+export interface Inventory {
+  _id: string;
+  name: string;
+  type: string;
+  notes:string
+  status: string;
+  warehouse?: {
+    _id: string;
+    name: string;
+  };
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  items: InventoryItem[];
+  order: number;
+  globalOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Meta {
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+}
+
+export const getAllInventories = async (
+  page = 1,
+  limit = 10,
+  search = "",
+  warehouse?: string,
+  status?: string,
+  sort = "-createdAt",
+  token?: string
+): Promise<{ data: Inventory[]; meta: Meta }> => {
+  const params: Record<string, any> = { page, limit, search, sort };
+  if (warehouse) params.warehouse = warehouse;
+  if (status) params.status = status;
+
+  const res = await api.get("/inventories", {
+    params,
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+  });
+
+  return res.data;
 };
 
 export const getInventoryById = async (
-  id: string
-): Promise<{ success: boolean; data: InventoryCount }> => {
-  try {
-    const response = await api.get(`/inventories/${id}`);
-    
-    if (!response.data.success) {
-      throw new Error(response.data.message || "فشل في جلب بيانات الجرد");
-    }
-    
-    return response.data;
-  } catch (error: any) {
-    // تسجيل الخطأ للتصحيح
-    console.error('Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
-    
-    throw new Error(
-      error.response?.data?.message || 
-      error.message || 
-      "فشل في جلب بيانات الجرد. يرجى التحقق من اتصال الشبكة والمحاولة مرة أخرى"
-    );
-  }
+  id: string,
+): Promise<Inventory> => {
+  const res = await api.get(`/inventories/${id}`, {
+
+  });
+
+  return res.data.data;
 };

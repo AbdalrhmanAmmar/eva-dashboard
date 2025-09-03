@@ -412,6 +412,7 @@ const ProductManagement: React.FC = () => {
                           <img
                             className="h-10 w-10 rounded-md object-cover"
                             src={getFileUrl(`/uploads/product/${product.images[0]?.url}`)}
+
                             alt={product.name}
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40';
