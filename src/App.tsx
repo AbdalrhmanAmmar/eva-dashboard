@@ -28,7 +28,9 @@ import InventoryShowById from './pages/warehouse/inventory/InventoryShowById';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import TransferQuantities from './pages/warehouse/TransferQuantities';
-import Offers from './pages/Offers';
+import Offers from './pages/Offers/Offers';
+import CreateOffer from './pages/Offers/CreateOffer';
+import Invoice from './components/Offer/Invoice';
 
 function App() {
   return (
@@ -68,6 +70,8 @@ function App() {
           <Route path="warehouse-create" element={<CreateWarehouse />} />
           <Route path="settings" element={<Settings />} />
           <Route path="offers" element={<Offers />} />
+<Route path="/invoice/:id" element={<Invoice />} />
+          <Route path="create-offer" element={<CreateOffer />} />
           <Route path="products" element={<Products />} />
         </Route>
         

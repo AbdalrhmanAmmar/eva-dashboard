@@ -521,86 +521,108 @@ const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'completed') =
                 </div>
               )}
 
-              <div className="bg-white rounded-lg border">
-                <div className="flex justify-between items-center border-b p-4">
-                  <div className="flex gap-4">
-                    <button
-                      className={`px-3 py-1 rounded ${activeFilterTab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                      onClick={() => setActiveFilterTab('all')}
-                    >
-                      الكل ({totalProducts})
-                    </button>
-                    <button
-                      className={`px-3 py-1 rounded ${activeFilterTab === 'counted' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                      onClick={() => setActiveFilterTab('counted')}
-                    >
-                      مجرود ({countedProducts})
-                    </button>
-                    <button
-                      className={`px-3 py-1 rounded ${activeFilterTab === 'uncounted' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                      onClick={() => setActiveFilterTab('uncounted')}
-                    >
-                      غير مجرود ({totalProducts - countedProducts})
-                    </button>
-                    <button
-                      className={`px-3 py-1 rounded ${activeFilterTab === 'matched' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                      onClick={() => setActiveFilterTab('matched')}
-                    >
-                      مطابق ({matchedProducts})
-                    </button>
-                    <button
-                      className={`px-3 py-1 rounded ${activeFilterTab === 'mismatched' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                      onClick={() => setActiveFilterTab('mismatched')}
-                    >
-                      غير مطابق ({mismatchedProducts})
-                    </button>
+              <div className="bg-card border border-border rounded-xl shadow-soft overflow-hidden">
+                <div className="border-b border-border p-5">
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                      <button
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          activeFilterTab === 'all' 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                        }`}
+                        onClick={() => setActiveFilterTab('all')}
+                      >
+                        الكل ({totalProducts})
+                      </button>
+                      <button
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          activeFilterTab === 'counted' 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                        }`}
+                        onClick={() => setActiveFilterTab('counted')}
+                      >
+                        مجرود ({countedProducts})
+                      </button>
+                      <button
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          activeFilterTab === 'uncounted' 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                        }`}
+                        onClick={() => setActiveFilterTab('uncounted')}
+                      >
+                        غير مجرود ({totalProducts - countedProducts})
+                      </button>
+                      <button
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          activeFilterTab === 'matched' 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                        }`}
+                        onClick={() => setActiveFilterTab('matched')}
+                      >
+                        مطابق ({matchedProducts})
+                      </button>
+                      <button
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          activeFilterTab === 'mismatched' 
+                            ? 'bg-primary text-primary-foreground shadow-sm' 
+                            : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                        }`}
+                        onClick={() => setActiveFilterTab('mismatched')}
+                      >
+                        غير مطابق ({mismatchedProducts})
+                      </button>
+                    </div>
+                    <Filter size={16} className="text-muted-foreground" />
                   </div>
-                  <Filter size={16} className="text-gray-500" />
                 </div>
 
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-100">
+                    <thead className="bg-secondary/30">
+                      <tr>
                         {form.type === "partial" && (
-                          <th className="px-3 py-2 text-center font-medium text-gray-700">
+                          <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                             حذف
                           </th>
                         )}
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           الصورة
                         </th>
-                        <th className="px-3 py-2 text-right font-medium text-gray-700">
+                        <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">
                           المنتج
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           المخزون
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           المحجوز
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           المتوقع
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           المجرود
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           الحالة
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           الصافي
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           قبل الخصم
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           بعد الخصم
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           العجز
                         </th>
-                        <th className="px-3 py-2 text-center font-medium text-gray-700">
+                        <th className="px-6 py-3 text-center text-sm font-semibold text-foreground">
                           التكلفة
                         </th>
                       </tr>
@@ -616,12 +638,12 @@ const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'completed') =
                         const shortageCost = Math.max(0, shortage * product.costPrice).toFixed(2);
                         
                         return (
-                          <tr key={product._id} className="border-b hover:bg-gray-50">
+                          <tr key={product._id} className="border-b border-border hover:bg-secondary/20 transition-colors group">
                             {form.type === "partial" && (
-                              <td className="px-3 py-2 text-center">
+                              <td className="px-6 py-4 text-center">
                                 <button
                                   type="button"
-                                  className="text-red-600 hover:text-red-800 opacity-0 group-hover:opacity-100"
+                                  className="text-destructive hover:text-destructive/80 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10"
                                   onClick={() => removeProduct(product._id)}
                                 >
                                   <Trash2 size={16} />
@@ -629,33 +651,37 @@ const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'completed') =
                               </td>
                             )}
                             
-                            <td className="px-3 py-2 text-center">
-                              {product.images?.[0] && (
+                            <td className="px-6 py-4 text-center">
+                              {product.images?.[0] ? (
                                 <img
                                   src={`/uploads/product/${product.images[0].url}`}
                                   alt={product.name}
                                   width={48}
                                   height={48}
-                                  className="rounded object-cover mx-auto"
+                                  className="rounded-lg object-cover mx-auto shadow-sm"
                                 />
+                              ) : (
+                                <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center mx-auto">
+                                  <Package className="w-6 h-6 text-muted-foreground" />
+                                </div>
                               )}
                             </td>
                             
-                            <td className="px-3 py-2">
+                            <td className="px-6 py-4">
                               <div className="flex flex-col">
-                                <span className="font-medium text-gray-900">{product.name}</span>
-                                <span className="text-sm text-gray-500">{product.sku}</span>
+                                <span className="font-semibold text-foreground">{product.name}</span>
+                                <span className="text-sm text-muted-foreground">{product.sku}</span>
                               </div>
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className="font-medium">{product.quantity}</span>
-                                <span className="text-xs text-gray-500">المخزون</span>
+                                <span className="font-semibold text-foreground">{product.quantity}</span>
+                                <span className="text-xs text-muted-foreground">المخزون</span>
                               </div>
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <input
                                 type="number"
                                 min="0"
@@ -666,20 +692,20 @@ const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'completed') =
                                     parseInt(e.target.value) || 0
                                   )
                                 }
-                                className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                className="w-20 px-3 py-2 border border-input rounded-md text-center bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all"
                               />
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className="font-medium text-purple-600">
+                                <span className="font-semibold text-purple-600">
                                   {product.quantity - reservedQuantity}
                                 </span>
-                                <span className="text-xs text-gray-500">متوقع</span>
+                                <span className="text-xs text-muted-foreground">متوقع</span>
                               </div>
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <input
                                 type="number"
                                 min="0"
@@ -690,70 +716,74 @@ const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'completed') =
                                     parseInt(e.target.value) || 0
                                   )
                                 }
-                                className={`w-20 px-2 py-1 border rounded text-center ${
-                                  countedQuantity > 0 && !isMatched ? 'border-yellow-500 bg-yellow-50' : ''
+                                className={`w-20 px-3 py-2 border rounded-md text-center bg-background focus:ring-2 focus:ring-ring focus:border-transparent transition-all ${
+                                  countedQuantity > 0 && !isMatched ? 'border-yellow-500 bg-yellow-50' : 'border-input'
                                 } ${
                                   isMatched && countedQuantity > 0 ? 'border-green-500 bg-green-50' : ''
                                 }`}
                               />
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               {countedQuantity > 0 ? (
                                 isMatched ? (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                                     <CheckCircle size={12} />
                                     مطابق
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-sm">
+                                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
                                     <AlertCircle size={12} />
                                     غير مطابق
                                   </span>
                                 )
                               ) : (
-                                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 rounded text-sm">
+                                <span className="inline-flex items-center px-3 py-1 bg-secondary text-muted-foreground rounded-full text-sm font-medium">
                                   غير مجرود
                                 </span>
                               )}
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className="font-medium">{netInventory}</span>
-                                <span className="text-xs text-gray-500">الصافي</span>
+                                <span className="font-semibold text-foreground">{netInventory}</span>
+                                <span className="text-xs text-muted-foreground">الصافي</span>
                               </div>
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className="font-medium">{product.quantity}</span>
-                                <span className="text-xs text-gray-500">قبل الخصم</span>
+                                <span className="font-semibold text-foreground">{product.quantity}</span>
+                                <span className="text-xs text-muted-foreground">قبل الخصم</span>
                               </div>
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className="font-medium">{product.quantity - reservedQuantity}</span>
-                                <span className="text-xs text-gray-500">بعد الخصم</span>
+                                <span className="font-semibold text-foreground">{product.quantity - reservedQuantity}</span>
+                                <span className="text-xs text-muted-foreground">بعد الخصم</span>
                               </div>
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className={`font-medium ${shortage > 0 ? 'text-red-600' : ''}`}>
+                                <span className={`font-semibold ${
+                                  shortage > 0 ? 'text-destructive' : 'text-foreground'
+                                }`}>
                                   {shortage}
                                 </span>
-                                <span className="text-xs text-gray-500">العجز</span>
+                                <span className="text-xs text-muted-foreground">العجز</span>
                               </div>
                             </td>
                             
-                            <td className="px-3 py-2 text-center">
+                            <td className="px-6 py-4 text-center">
                               <div className="flex flex-col items-center">
-                                <span className={`font-medium ${shortage > 0 ? 'text-red-600' : ''}`}>
+                                <span className={`font-semibold ${
+                                  shortage > 0 ? 'text-destructive' : 'text-foreground'
+                                }`}>
                                   {shortageCost} ج.م
                                 </span>
-                                <span className="text-xs text-gray-500">التكلفة</span>
+                                <span className="text-xs text-muted-foreground">التكلفة</span>
                               </div>
                             </td>
                           </tr>

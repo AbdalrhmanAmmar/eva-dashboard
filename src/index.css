@@ -1,7 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* Modern Design System with vibrant colors and gradients */
 
@@ -273,3 +273,44 @@
   }
 }
 
+/* عند الطباعة فقط */
+@media print {
+  /* إخفاء الهيدر والسايدبار وعناصر أخرى غير مرغوب فيها */
+  .header, 
+  .sidebar, 
+  .no-print, 
+  button, 
+  .MuiAppBar-root, 
+  nav,
+  .print-hide {
+    display: none !important;
+  }
+  
+  /* ضبط هوامش الصفحة */
+  @page {
+    margin: 0;
+    size: A4;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* ضمان ظهور المحتوى الرئيسي بشكل كامل */
+  .main-content {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* تحسين مظهر الجداول عند الطباعة */
+  table {
+    page-break-inside: avoid;
+    border-collapse: collapse;
+    width: 100%;
+  }
+}
