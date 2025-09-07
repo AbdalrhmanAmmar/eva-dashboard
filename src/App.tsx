@@ -30,7 +30,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import TransferQuantities from './pages/warehouse/TransferQuantities';
 import Offers from './pages/Offers/Offers';
 import CreateOffer from './pages/Offers/CreateOffer';
+import UpdateOffer from './pages/Offers/UpdateOffer';
 import Invoice from './components/Offer/Invoice';
+
 
 function App() {
   return (
@@ -72,6 +74,8 @@ function App() {
           <Route path="offers" element={<Offers />} />
 <Route path="/invoice/:id" element={<Invoice />} />
           <Route path="create-offer" element={<CreateOffer />} />
+          <Route path="update-offer/:id" element={<UpdateOffer />} />
+
           <Route path="products" element={<Products />} />
         </Route>
         

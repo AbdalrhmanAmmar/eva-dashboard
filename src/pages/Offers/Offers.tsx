@@ -3,9 +3,9 @@ import { PlusCircle, Search, User, Eye, Download, Edit, Trash2 } from 'lucide-re
 import { Input } from '../../components/ui/input'; 
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatArabicDate } from '../../utils/formatDate'; 
-import { getAllOffers } from '../../api/offerAPI';
-import { handleDownloadOffer } from '../../utils/pdfGenerator';
-import toast from 'react-hot-toast';
+import { downloadOffer, getAllOffers, deleteOffer } from '../../api/offerAPI';
+import { toast } from 'react-hot-toast';
+
 
 
 // واجهة بيانات العرض بناءً على استجابة API الحقيقية
@@ -43,6 +43,8 @@ function Offers() {
   const [loading, setLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
 
   
 
@@ -99,74 +101,41 @@ function Offers() {
     navigate('/create-offer');
   };
 
-  const handleViewDetails = async (id: string) => {
-    try {
-      toast.loading('جاري إنشاء ملف PDF...', { id: 'pdf-generation' });
-      
-      // استخدام الخدمة الخلفية لتحميل PDF
-      const response = await fetch(`http://localhost:4000/api/offers/${id}/pdf`);
-      
-      if (!response.ok) {
-        throw new Error('فشل في تحميل ملف PDF');
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Offer-${id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('تم تحميل ملف PDF بنجاح', { id: 'pdf-generation' });
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast.error('فشل في تحميل ملف PDF', { id: 'pdf-generation' });
-    }
-  };
+
 
   const handleEditOffer = (id: string) => {
-    navigate(`/edit-offer/${id}`);
+    navigate(`/update-offer/${id}`);
   };
 
   const handleDeleteOffer = (id: string) => {
-    // دالة حذف العرض
-    if (window.confirm('هل أنت متأكد من أنك تريد حذف هذا العرض؟')) {
-      console.log('حذف العرض:', id);
-      // هنا سيتم استدعاء API للحذف
-      setOfferData(prev => prev.filter(offer => offer._id !== id));
+    setOfferToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!offerToDelete) return;
+    
+    try {
+      await deleteOffer(offerToDelete);
+      setOfferData(prev => prev.filter(offer => offer._id !== offerToDelete));
+      setFilteredOffers(prev => prev.filter(offer => offer._id !== offerToDelete));
+      toast.success('تم حذف العرض بنجاح');
+    } catch (error: any) {
+      console.error('Error deleting offer:', error);
+      const errorMessage = error.response?.data?.message || 'حدث خطأ أثناء حذف العرض';
+      toast.error(errorMessage);
+    } finally {
+      setDeleteModalOpen(false);
+      setOfferToDelete(null);
     }
   };
 
-  const handleDownloadPDF = async (id: string) => {
-    try {
-      toast.loading('جاري إنشاء ملف PDF...', { id: 'pdf-generation' });
-      
-      // استخدام الخدمة الخلفية لتحميل PDF
-      const response = await fetch(`http://localhost:3000/api/offers/${id}/pdf`);
-      
-      if (!response.ok) {
-        throw new Error('فشل في تحميل ملف PDF');
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Offer-${id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('تم تحميل ملف PDF بنجاح', { id: 'pdf-generation' });
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast.error('فشل في تحميل ملف PDF', { id: 'pdf-generation' });
-    }
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setOfferToDelete(null);
   };
+
+  
 
   // دالة لتحديد حالة العرض بناءً على تاريخ الإنشاء
   const getOfferStatus = (createdAt: string) => {
@@ -263,24 +232,18 @@ function Offers() {
                       <td className="px-6 py-4">{formatArabicDate(item.createdAt)}</td>
                       <td className="px-6 py-4">
                         <button
-  onClick={() => navigate("/invoice/"+item._id)}
-  className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors"
-  title="تحميل العرض كـ PDF"
->
-  <Download className="w-4 h-4" />
-</button>
+                          onClick={() => downloadOffer(item._id)}
+                          className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors"
+                          title="تحميل العرض كـ PDF"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
                         {item.downloadsCount}
                       </td>
                   
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleViewDetails(item._id)}
-                            className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                            title="عرض التفاصيل"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                   
                           <button
                             onClick={() => handleEditOffer(item._id)}
                             className="p-2 hover:bg-yellow-50 text-yellow-600 rounded-lg transition-colors"
@@ -320,6 +283,42 @@ function Offers() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">تأكيد الحذف</h3>
+                <p className="text-sm text-gray-600">هذا الإجراء لا يمكن التراجع عنه</p>
+              </div>
+            </div>
+            
+            <p className="text-gray-700 mb-6">
+              هل أنت متأكد من أنك تريد حذف هذا العرض؟ سيتم حذف جميع البيانات المرتبطة به نهائياً.
+            </p>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                حذف العرض
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

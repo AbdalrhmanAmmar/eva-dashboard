@@ -45,7 +45,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     { icon: TrendingUp, label: t('sidebar.metaAnalytics'), path: '/meta-analytics' },
     { icon: MessageSquare, label: t('sidebar.messages'), path: '/messages' },
     { icon: Smartphone, label: t('sidebar.smsMessages'), path: '/sms-messages' },
-    { icon: FileText, label: t('sidebar.servicesForm'), path: '/services-form' }
+    { icon: FileText, label: t('sidebar.servicesForm'), path: '/services-form' },
+
   ];
 
   const warehouseItems = [

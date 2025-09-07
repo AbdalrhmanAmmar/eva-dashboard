@@ -7,6 +7,7 @@ import EngineeringPlan from '../components/services/EngineeringPlan';
 import SafetyPlan from '../components/services/SafetyPlan';
 import SafetySystems from '../components/services/SafetySystems';
 import SystemRehabilitation from '../components/services/SystemRehabilitation';
+import FireExtingisherMaintenance from '../components/FireExtingisherMaintenance';
 
 
 const serviceTypes = [
@@ -49,6 +50,11 @@ const serviceTypes = [
     id: 'system_rehabilitation', 
     name: 'إعادة تأهيل الأنظمة',
     component: SystemRehabilitation
+  },
+  { 
+    id: 'fire_extinguisher_maintenance', 
+    name: 'صيانه طفايات الحرايق',
+    component: FireExtingisherMaintenance
   }
 ];
 
