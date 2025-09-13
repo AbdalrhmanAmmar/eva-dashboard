@@ -47,15 +47,16 @@ function Login() {
       
       const response = await login(formattedData);
       
-      // Store user data and token in Zustand store
-      storeLogin(response.user, response.token);
-      
-      // Navigate based on user role
-      if (response.user.role === 'admin') {
-        navigate("/admin");
-      } else {
-        navigate("/");
+      // Check if login was successful and data exists
+      if (!response.success || !response.data || !response.data.user) {
+        throw new Error(response.message || 'فشل في تسجيل الدخول');
       }
+      
+      // Store user data and token in Zustand store
+      storeLogin(response.data.user, response.data.token || '');
+      
+      // Navigate to profile page
+      navigate("/profile");
       
     } catch (error: any) {
       setError('root', {

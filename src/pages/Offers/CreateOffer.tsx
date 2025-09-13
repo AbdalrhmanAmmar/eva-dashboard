@@ -240,22 +240,22 @@ function CreateOffer() {
     return total + (work.quantity || 0) * (work.price || 0);
   }, 0) || 0;
 
-  // جلب عناصر العمل عند التحميل
-  useEffect(() => {
-    const fetchWorkItems = async () => {
-      try {
-        const items = await getWorkItems();
-        setWorkItems(items);
-      } catch (error: any) {
-        console.error('Failed to fetch work items:', error);
-        setError(error.response?.data?.message || 'حدث خطأ أثناء جلب البيانات');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // // جلب عناصر العمل عند التحميل
+  // useEffect(() => {
+  //   const fetchWorkItems = async () => {
+  //     try {
+  //       const items = await getWorkItems();
+  //       setWorkItems(items);
+  //     } catch (error: any) {
+  //       console.error('Failed to fetch work items:', error);
+  //       setError(error.response?.data?.message || 'حدث خطأ أثناء جلب البيانات');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchWorkItems();
-  }, []);
+  //   fetchWorkItems();
+  // }, []);
 
   const onSubmit = async (data: OfferFormData) => {
     try {
@@ -319,7 +319,7 @@ function CreateOffer() {
     });
   };
 
-  if (loading) {
+  if (!loading) {
     return (
       <div className="flex items-center justify-center p-4 text-primary">
         <Loader2 className="w-5 h-5 animate-spin mr-2" />

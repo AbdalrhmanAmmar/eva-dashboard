@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+interface User {
+  id: string;
+  name: string;
+  phone: string;
+  role: string;
+  email?: string;
+  isVerified?: boolean;
+}
+
 interface AuthState {
   user: User | null;
   token: string | null;

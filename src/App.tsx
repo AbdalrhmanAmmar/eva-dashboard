@@ -26,7 +26,6 @@ import WarehouseInventory from './pages/warehouse/inventory/WarehouseInventory';
 import InventoryShow from './pages/warehouse/inventory/InventoryShow';
 import InventoryShowById from './pages/warehouse/inventory/InventoryShowById';
 import Login from './pages/Login';
-import ProtectedRoute from './components/ProtectedRoute';
 import TransferQuantities from './pages/warehouse/TransferQuantities';
 import Offers from './pages/Offers/Offers';
 import CreateOffer from './pages/Offers/CreateOffer';
@@ -43,11 +42,12 @@ function App() {
         
         {/* Protected routes */}
         <Route path="/" element={
-          <ProtectedRoute>
+      
             <Layout />
-          </ProtectedRoute>
+      
         }>
           <Route index element={<Dashboard />} />
+          <Route path="profile" element={<UserProfilePage />} />
           <Route path="messages" element={<Messages />} />
           <Route path="users" element={<Users />} />
           <Route path="users/:id" element={<UserProfilePage />} />
@@ -79,8 +79,13 @@ function App() {
           <Route path="products" element={<Products />} />
         </Route>
         
+        
         {/* Catch all route - redirect to login */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* <Route path="*" element={<Navigate to="/login" replace />} /> */}
+      </Routes>
+
+      <Routes >
+        <Route path="/test/create-offer" element={<CreateOffer />} />
       </Routes>
     </Router>
   );
