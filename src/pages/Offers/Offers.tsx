@@ -106,6 +106,9 @@ function Offers() {
   const handleEditOffer = (id: string) => {
     navigate(`/update-offer/${id}`);
   };
+  const Createcontract=()=>{
+    navigate("/Create-Contract")
+  }
 
   const handleDeleteOffer = (id: string) => {
     setOfferToDelete(id);
@@ -155,14 +158,26 @@ function Offers() {
           <h1 className="text-3xl font-bold text-gradient">إدارة العروض</h1>
           <p className="text-muted-foreground mt-2">يمكنك إدارة العروض والمعلومات الخاصة بها</p>
         </div>
-        
-        <button 
+
+        <div className='flex gap-5'>
+                <button 
+          className='bg-indigo-600 text-white font-bold flex items-center gap-2 py-3 px-6 rounded-md'
+          onClick={Createcontract}
+        >
+          <PlusCircle className="w-5 h-5" />
+          انشاء جهه اتصال جديده
+        </button>
+                <button 
           className='btn-gradient flex items-center gap-2 py-3 px-6 rounded-md'
           onClick={handleCreateOffer}
         >
           <PlusCircle className="w-5 h-5" />
           إنشاء عرض جديد
         </button>
+
+        </div>
+        
+  
       </div>
 
       {/* Search */}
