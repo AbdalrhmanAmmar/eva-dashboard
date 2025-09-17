@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Loader2, Users, Phone, User, Search, ChevronRight, Shield, Building2, ArrowUp, ArrowDown, Mail, BadgeCheck, Filter, X, Calendar, ChevronLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { adminAPI } from "../api/getUser";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface User {
   _id: string;
@@ -256,16 +257,24 @@ export default function AdminUsersPage() {
     const date = new Date(dateString);
     return date.toLocaleDateString('ar-EG');
   };
+const Navigate = useNavigate();
+
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
+             <div>
+            <button onClick={()=>Navigate("/Create-user")}  className="btn-gradient rounded-md my-3 text-white ">اضافه عميل جديد</button>
+          </div>
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+     
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Users className="w-5 h-5 text-blue-600" />
             </div>
+           
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">إدارة المستخدمين</h1>
               <p className="text-gray-600 text-sm">

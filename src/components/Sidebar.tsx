@@ -42,7 +42,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     { icon: BarChart3, label: t('sidebar.analytics'), path: '/analytics' },
     { icon: BarChart3, label: "العملاء", path: '/users' },
     { icon: BarChart3, label: "العروض", path: '/offers' },
-    { icon: BarChart3, label: "جهات الاتصال ", path: '/Contacts' },
     { icon: TrendingUp, label: t('sidebar.metaAnalytics'), path: '/meta-analytics' },
     { icon: MessageSquare, label: t('sidebar.messages'), path: '/messages' },
     { icon: Smartphone, label: t('sidebar.smsMessages'), path: '/sms-messages' },

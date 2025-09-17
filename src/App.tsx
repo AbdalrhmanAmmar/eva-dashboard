@@ -32,8 +32,8 @@ import CreateOffer from './pages/Offers/CreateOffer';
 import UpdateOffer from './pages/Offers/UpdateOffer';
 import Invoice from './components/Offer/Invoice';
 import CreateContacts from './pages/Contacts/CreateContacts';
-import Contacts from './pages/Contacts/Contacts';
 import EditContact from './pages/Contacts/EditContact';
+import CreateUser from './pages/CreateUser';
 
 
 function App() {
@@ -81,7 +81,7 @@ function App() {
 
           <Route path="products" element={<Products />} />
           <Route path="Create-Contract" element={<CreateContacts />} />
-          <Route path="Contacts" element={<Contacts />} />
+          <Route path="Create-user" element={<CreateUser />} />
           <Route path="/contacts/edit/:id" element={<EditContact />} />
         </Route>
         

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { createContact, ContactPayload } from "../../api/Contact";
 import { ArrowLeft, User, Globe, MapPin, Building, Hash, FileText, Check, Loader2 } from "lucide-react";
+import { useCustomersStore } from "../../store/customersStore";
 
 const addressSchema = z.object({
   city: z.string().optional(),
@@ -31,6 +32,8 @@ const contactSchema = z.object({
 export type ContactFormData = z.infer<typeof contactSchema>;
 
 function CreateContacts() {
+  const {customers} = useCustomersStore()
+  console.log(`customers`, customers)
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -54,6 +57,12 @@ function CreateContacts() {
       },
     },
   });
+
+  useEffect(() => {
+    console.log(`customers`, customers)
+    
+  }, [])
+  
 
   const onSubmit = async (data: ContactFormData) => {
     try {

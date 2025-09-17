@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { Plus, Trash2, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import { Input } from '../../components/ui/input';
-import { createWorkItem, getWorkItems, IWorkItem, createOffer, IOffer } from '../../api/offerAPI';
+import { createWorkItem,  IWorkItem, createOffer, IOffer } from '../../api/offerAPI';
 
 // مخطط Zod للعمل الفردي
 const workItemSchema = z.object({
@@ -294,29 +294,35 @@ function CreateOffer() {
   const addWork = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    if (!newWorkItem.name) {
-      toast.error('يرجى اختيار عمل لإضافته');
-      return;
-    }
+    if (!newWorkItem.workDescription.trim()) {
+       toast.error('يرجى إدخال وصف العمل');
+       return;
+     }
+     
+     if (newWorkItem.quantity <= 0) {
+       toast.error('يرجى إدخال كمية صحيحة');
+       return;
+     }
+     
+     if (newWorkItem.price < 0) {
+       toast.error('يرجى إدخال سعر صحيح');
+       return;
+     }
+     
+     append({ 
+       workDescription: newWorkItem.workDescription, 
+       quantity: newWorkItem.quantity, 
+       price: newWorkItem.price 
+     });
+     
+     // إعادة تعيين الحقول
+     setNewWorkItem({
+       workDescription: '',
+       quantity: 1,
+       price: 0
+     });
     
-    const selectedWorkItem = workItems.find(item => item._id === newWorkItem.name);
-    if (!selectedWorkItem) {
-      toast.error('العمل المحدد غير موجود');
-      return;
-    }
-    
-    append({ 
-      workItemId: selectedWorkItem._id, 
-      quantity: newWorkItem.quantity, 
-      price: newWorkItem.price 
-    });
-    
-    // إعادة تعيين الحقول
-    setNewWorkItem({
-      name: '',
-      quantity: 1,
-      price: 0
-    });
+    toast.success('تم إضافة العمل بنجاح!');
   };
 
   if (!loading) {
@@ -402,19 +408,16 @@ function CreateOffer() {
 
           {/* أعمال العرض */}
           <div className='mb-6'>
-            <div className='flex justify-between items-center mb-4'>
-              <h2 className="text-xl font-semibold text-gray-800">أعمال العرض</h2>
-              <AddWorkItemBtn onWorkItemAdded={handleAddWorkItem} />
-            </div>
+  
 
             <div className='bg-gray-50 p-4 rounded-lg mb-4'>
               <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">اختر العمل</label>
-                  <WorkItemSelect 
-                    workItems={workItems} 
+                  <Input 
+                
                     value={newWorkItem.name}
-                    onChange={(value) => setNewWorkItem({...newWorkItem, name: value})}
+                    onChange={(e) => setNewWorkItem({...newWorkItem, name: (e.target.value)})}
                   />
                 </div>
                 <div>
