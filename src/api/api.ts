@@ -4,8 +4,8 @@ import { useAuthStore } from "../store/authStore";
 
 // إعداد Axios
 const api = axios.create({
-  // baseURL: "https://back-api.evasaudi.com/api",
-  baseURL:"http://localhost:4000/api",
+  baseURL: "https://back-api.evasaudi.com/api",
+  // baseURL:"http://localhost:4000/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
