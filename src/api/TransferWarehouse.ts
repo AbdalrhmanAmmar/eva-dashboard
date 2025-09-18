@@ -145,6 +145,7 @@ export const transferProducts = async (transferData: TransferRequest): Promise<T
         }
       }
     }
+    
 
     const response = await api.post('/warehouse-transactions/transfer', transferData);
     return response.data;
