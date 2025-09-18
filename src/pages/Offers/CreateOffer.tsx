@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { toast } from 'react-toastify';
 import { Plus, Trash2, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import { Input } from '../../components/ui/input';
+import { DatePicker } from '../../components/ui/date-picker';
 import { createWorkItem,  IWorkItem, createOffer, IOffer } from '../../api/offerAPI';
 
 // مخطط Zod للعمل الفردي
@@ -17,6 +18,7 @@ const workItemSchema = z.object({
 // مخطط Zod للعرض بالكامل
 const offerSchema = z.object({
   offerName: z.string().min(1, 'اسم العرض مطلوب'),
+  offerDate: z.date().optional(),
   to: z.string().min(1, 'اسم الجهة المستلمة مطلوب'),
   project: z.string().min(1, 'اسم المشروع مطلوب'),
   subject: z.string().min(1, 'موضوع العرض مطلوب'),
@@ -354,17 +356,32 @@ function CreateOffer() {
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* المعلومات الأساسية */}
           <div className='mb-6'>
-            <div className='mb-4'>
-              <label className="block text-sm font-medium text-gray-700 mb-2">اسم العرض</label>
-              <Input 
-                type="text" 
-                placeholder="أدخل اسم العرض" 
-                className="w-full" 
-                {...register('offerName')}
-              />
-              {errors.offerName && (
-                <p className="mt-1 text-sm text-red-600">{errors.offerName.message}</p>
-              )}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">اسم العرض</label>
+                <Input 
+                  type="text" 
+                  placeholder="أدخل اسم العرض" 
+                  className="w-full" 
+                  {...register('offerName')}
+                />
+                {errors.offerName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.offerName.message}</p>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">تاريخ العرض</label>
+                <DatePicker 
+                  value={watch('offerDate')}
+                  onChange={(date) => setValue('offerDate', date)}
+                  placeholder="اختر تاريخ العرض"
+                  className="w-full"
+                />
+                {errors.offerDate && (
+                  <p className="mt-1 text-sm text-red-600">{errors.offerDate.message}</p>
+                )}
+              </div>
             </div>
             
             <div className='bg-gray-50 p-4 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4'>
@@ -410,33 +427,43 @@ function CreateOffer() {
           <div className='mb-6'>
   
 
-            <div className='bg-gray-50 p-4 rounded-lg mb-4'>
-              <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
+            <div className='bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 rounded-xl mb-6 shadow-sm'>
+              <div className='flex items-center gap-3 mb-4'>
+                <div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center'>
+                  <Plus className='w-4 h-4 text-white' />
+                </div>
+                <h3 className='text-lg font-semibold text-gray-800'>إضافة عمل جديد</h3>
+              </div>
+              
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">اختر العمل</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">وصف العمل</label>
                   <Input 
-                
-                    value={newWorkItem.name}
-                    onChange={(e) => setNewWorkItem({...newWorkItem, name: (e.target.value)})}
+                    placeholder="أدخل وصف العمل أو الخدمة"
+                    className="border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                    value={newWorkItem.workDescription}
+                    onChange={(e) => setNewWorkItem({...newWorkItem, workDescription: (e.target.value)})}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">الكمية</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">الكمية</label>
                   <Input 
                     type="number" 
                     min="1"
-                    className="w-full"
+                    placeholder="1"
+                    className="w-full border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                     value={newWorkItem.quantity}
                     onChange={(e) => setNewWorkItem({...newWorkItem, quantity: Number(e.target.value)})}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">السعر</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">السعر (ريال)</label>
                   <Input 
                     type="number" 
                     min="0"
                     step="0.01"
-                    className="w-full"
+                    placeholder="0.00"
+                    className="w-full border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                     value={newWorkItem.price}
                     onChange={(e) => setNewWorkItem({...newWorkItem, price: Number(e.target.value)})}
                   />
@@ -446,7 +473,7 @@ function CreateOffer() {
               <button
                 type="button"
                 onClick={addWork}
-                className="flex items-center justify-center gap-2 w-full py-3 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                className="flex items-center justify-center gap-3 w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
               >
                 <Plus className="w-5 h-5" />
                 إضافة إلى قائمة الأعمال
@@ -455,63 +482,71 @@ function CreateOffer() {
 
             {/* جدول الأعمال المضافة */}
             {fields.length > 0 ? (
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <div className="overflow-x-auto rounded-xl border border-blue-200 shadow-lg bg-white">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 rounded-t-xl">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-bold">{fields.length}</span>
+                    </div>
+                    قائمة الأعمال المضافة
+                  </h3>
+                </div>
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
                     <tr>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">#</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">اسم العمل</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">الكمية</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">السعر</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">الإجمالي</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">الإجراءات</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700">#</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700">وصف العمل</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700">الكمية</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700">السعر</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700">الإجمالي</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700">الإجراءات</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-blue-100">
                     {fields.map((field, index) => {
-                      const workItem = workItems.find(item => item._id === watchWorks[index]?.workItemId);
                       const total = (watchWorks[index]?.quantity || 0) * (watchWorks[index]?.price || 0);
                       
                       return (
-                        <tr key={field.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-center">{index + 1}</td>
-                          <td className="px-4 py-3">
-                            <WorkItemSelect
-                              workItems={workItems}
-                              value={watchWorks[index]?.workItemId || ''}
-                              onChange={(value) => setValue(`works.${index}.workItemId`, value)}
-                              error={errors.works?.[index]?.workItemId?.message}
-                            />
+                        <tr key={field.id} className="hover:bg-blue-50 transition-colors duration-150">
+                          <td className="px-6 py-4 text-center">
+                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                              {index + 1}
+                            </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-800">{watchWorks[index]?.workDescription}</div>
+                          </td>
+                          <td className="px-6 py-4">
                             <Input
                               type="number"
                               min="1"
                               {...register(`works.${index}.quantity`, { valueAsNumber: true })}
-                              className="w-20"
+                              className="w-20 border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                             />
                             {errors.works?.[index]?.quantity && (
                               <p className="text-xs text-red-600 mt-1">{errors.works[index]?.quantity?.message}</p>
                             )}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
                             <Input
                               type="number"
                               min="0"
                               step="0.01"
                               {...register(`works.${index}.price`, { valueAsNumber: true })}
-                              className="w-24"
+                              className="w-24 border-blue-200 focus:border-blue-400 focus:ring-blue-400"
                             />
                             {errors.works?.[index]?.price && (
                               <p className="text-xs text-red-600 mt-1">{errors.works[index]?.price?.message}</p>
                             )}
                           </td>
-                          <td className="px-4 py-3 font-medium">{total.toFixed(2)}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-lg text-green-600">{total.toFixed(2)} ريال</div>
+                          </td>
+                          <td className="px-6 py-4">
                             <button
                               type="button"
                               onClick={() => remove(index)}
-                              className="text-red-500 hover:text-red-700 p-1"
+                              className="bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 p-2 rounded-lg transition-all duration-200 hover:scale-110"
                               title="حذف"
                             >
                               <Trash2 className="w-5 h-5" />
@@ -521,11 +556,13 @@ function CreateOffer() {
                       );
                     })}
                   </tbody>
-                  <tfoot className="bg-gray-50">
+                  <tfoot className="bg-gradient-to-r from-green-50 to-emerald-50 border-t-2 border-green-200">
                     <tr>
-                      <td colSpan={4} className="px-4 py-3 text-left font-semibold">المجموع الكلي</td>
-                      <td className="px-4 py-3 font-bold text-primary">
-                        {totalAmount.toFixed(2)}
+                      <td colSpan={4} className="px-6 py-4 text-right font-bold text-lg text-gray-800">المجموع الكلي:</td>
+                      <td className="px-6 py-4">
+                        <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-xl shadow-lg">
+                          {totalAmount.toFixed(2)} ريال
+                        </div>
                       </td>
                       <td></td>
                     </tr>
@@ -533,13 +570,28 @@ function CreateOffer() {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Plus className="w-6 h-6 text-gray-400" />
+              <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-dashed border-blue-200 rounded-xl p-8 text-center transition-all duration-300 hover:shadow-lg hover:border-blue-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200 rounded-full opacity-20 -translate-y-10 translate-x-10"></div>
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-indigo-200 rounded-full opacity-20 translate-y-8 -translate-x-8"></div>
+                
+                <div className="relative z-10">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <Plus className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">ابدأ بإضافة الأعمال</h3>
+                  <p className="text-gray-600 mb-4 max-w-sm mx-auto">قم بإضافة الأعمال والخدمات التي تريد تضمينها في عرض الأسعار</p>
+                  
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-600 font-medium">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span>استخدم النموذج أعلاه لإضافة عمل جديد</span>
+                  </div>
                 </div>
-                <p className="text-gray-500">لم يتم إضافة أي أعمال بعد</p>
+                
                 {errors.works && (
-                  <p className="text-sm text-red-600 mt-2">{errors.works.message}</p>
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600 font-medium">{errors.works.message}</p>
+                  </div>
                 )}
               </div>
             )}
