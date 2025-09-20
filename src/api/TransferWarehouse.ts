@@ -66,6 +66,81 @@ export interface WarehouseProductsResponse {
   products?: Product[];
 }
 
+export interface TransferredProduct {
+  product: {
+    _id: string;
+    name: string;
+    images: Array<{
+      url: string;
+      isMain: boolean;
+      order: number;
+      _id: string;
+    }>;
+    sku: string;
+    id: string;
+  };
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalValue: number;
+  _id: string;
+  id: string;
+}
+
+export interface Transaction {
+  _id: string;
+  sourceWarehouse: {
+    _id: string;
+    name: string;
+    city: string;
+    district: string;
+  };
+  targetWarehouse: {
+    _id: string;
+    name: string;
+    city: string;
+    district: string;
+  };
+  transferredProducts: TransferredProduct[];
+  transactionType: string;
+  status: string;
+  notes: string;
+  createdBy: any;
+  totalItems: number;
+  totalValue: number;
+  transactionDate: string;
+  createdAt: string;
+  updatedAt: string;
+  transactionId: string;
+  __v: number;
+  transactionDuration: any;
+  id: string;
+}
+
+export interface TransactionsResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    transactions: Transaction[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalTransactions: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+}
+
+export interface TransactionFilters {
+  page?: number;
+  limit?: number;
+  status?: string;
+  warehouseId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 /**
  * جلب جميع المخازن النشطة
  */
@@ -253,10 +328,35 @@ export const calculateTransferValue = async (
   }
 };
 
+/**
+ * جلب جميع معاملات النقل مع إمكانية التصفية
+ */
+export const getAllTransactions = async (filters: TransactionFilters = {}): Promise<TransactionsResponse> => {
+  try {
+    const params = new URLSearchParams();
+    
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.status) params.append('status', filters.status);
+    if (filters.warehouseId) params.append('warehouseId', filters.warehouseId);
+    if (filters.startDate) params.append('startDate', filters.startDate);
+    if (filters.endDate) params.append('endDate', filters.endDate);
+
+    const response = await api.get(`/warehouse-transactions/transactions?${params.toString()}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'حدث خطأ في جلب المعاملات',
+    };
+  }
+};
+
 export default {
   getAllActiveWarehouses,
   getProductsByWarehouse,
   transferProducts,
   validateTransferQuantities,
   calculateTransferValue,
+  getAllTransactions,
 };

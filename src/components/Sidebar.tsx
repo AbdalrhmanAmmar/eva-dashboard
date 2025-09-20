@@ -53,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { icon: Warehouse, label: t('sidebar.viewWarehouses'), path: '/warehouse-management' },
     { icon: Package, label: t('sidebar.quantityManagement'), path: '/inventory-management' },
     { icon: ClipboardList, label: t('sidebar.inventoryCount'), path: '/inventory-show' },
-    { icon: Move3d , label:"نقل كميات مخازن", path: '/transfer-quantities' },
+    { icon: Move3d , label:"نقل كميات مخازن", path: '/all-transfer-warehouse' },
     { icon: ArrowUpDown, label: t('sidebar.priority'), path: '/warehouse-priority' },
   ];
 

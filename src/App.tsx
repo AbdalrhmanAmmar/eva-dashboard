@@ -34,6 +34,7 @@ import Invoice from './components/Offer/Invoice';
 import CreateContacts from './pages/Contacts/CreateContacts';
 import EditContact from './pages/Contacts/EditContact';
 import CreateUser from './pages/CreateUser';
+import TransferWarehouse from './pages/warehouse/TransferWarehouse';
 
 
 function App() {
@@ -69,7 +70,7 @@ function App() {
           <Route path="/product-create" element={<ProductForm />} />
           <Route path="/edit-warehouse/:id" element={<WarehouseEdit />} />
           <Route path="/warehouse-inventory" element={<WarehouseInventory />} />
-          <Route path="/transfer-quantities" element={<TransferQuantities />} />
+          <Route path="/create-transfer-warehouse" element={<TransferQuantities />} />
           <Route path="/inventory-show" element={<InventoryShow />} />
           <Route path="/inventory-show/:id" element={<InventoryShowById />} />
           <Route path="warehouse-create" element={<CreateWarehouse />} />
@@ -83,6 +84,7 @@ function App() {
           <Route path="Create-Contract" element={<CreateContacts />} />
           <Route path="Create-user" element={<CreateUser />} />
           <Route path="/contacts/edit/:id" element={<EditContact />} />
+          <Route path="/all-transfer-warehouse" element={<TransferWarehouse />} />
         </Route>
         
         
