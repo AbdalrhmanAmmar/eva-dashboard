@@ -107,7 +107,7 @@ function Offers() {
     navigate(`/update-offer/${id}`);
   };
   const Createcontract=()=>{
-    navigate("/Create-Contract")
+    navigate("/Create-User")
   }
 
   const handleDeleteOffer = (id: string) => {
