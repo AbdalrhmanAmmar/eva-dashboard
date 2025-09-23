@@ -26,6 +26,7 @@ interface ProductTransferCardProps {
 
 function ProductTransferCard({ product, onAddTransfer, isInTransferList }: ProductTransferCardProps) {
   const [quantity, setQuantity] = useState(1);
+  const [poroductgroup, setProductgroup] = usestate()
 
   const handleAdd = () => {
     onAddTransfer(product._id, quantity);

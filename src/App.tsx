@@ -35,6 +35,7 @@ import CreateContacts from './pages/Contacts/CreateContacts';
 import EditContact from './pages/Contacts/EditContact';
 import CreateUser from './pages/CreateUser';
 import TransferWarehouse from './pages/warehouse/TransferWarehouse';
+import Transferdetails from './pages/warehouse/transfer/Transferdetails';
 
 
 function App() {
@@ -85,6 +86,7 @@ function App() {
           <Route path="Create-user" element={<CreateUser />} />
           <Route path="/contacts/edit/:id" element={<EditContact />} />
           <Route path="/all-transfer-warehouse" element={<TransferWarehouse />} />
+          <Route path="/transfer-details/:id" element={<Transferdetails />} />
         </Route>
         
         

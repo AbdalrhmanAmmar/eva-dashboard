@@ -352,10 +352,35 @@ export const getAllTransactions = async (filters: TransactionFilters = {}): Prom
   }
 };
 
+export const getTransactionById = async (id: string): Promise<{ success: boolean; message: string; transaction?: Transaction }> => {
+  try {
+    const response = await api.get(`/warehouse-transactions/transactions/${id}`);
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'حدث خطأ في جلب تفاصيل المعاملة',
+    };
+  }
+};
+
+export const updateTransactionStatus = async (id: string, status: string): Promise<{ success: boolean; message: string; transaction?: Transaction }> => {
+  try {
+    const response = await api.patch(`/warehouse-transactions/transactions/${id}/status`, { status });
+    return response.data;
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.response?.data?.message || 'حدث خطأ في تحديث حالة المعاملة',
+    };
+  }
+};
+
 export default {
   getAllActiveWarehouses,
   getProductsByWarehouse,
   transferProducts,
+  getTransactionById,
   validateTransferQuantities,
   calculateTransferValue,
   getAllTransactions,

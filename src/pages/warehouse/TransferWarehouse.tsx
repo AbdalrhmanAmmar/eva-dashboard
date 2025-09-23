@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Calendar, Package, ArrowRight, Eye, Download } from 'lucide-react';
+import { Search, Filter, Calendar, Package, ArrowRight, Eye, Download, Check, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { 
   getAllTransactions, 
   getAllActiveWarehouses, 
   Transaction, 
   TransactionFilters, 
-  Warehouse 
+  Warehouse, 
+  updateTransactionStatus
 } from '../../api/TransferWarehouse';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const TransferWarehouse: React.FC = () => {
   const navigate = useNavigate()
@@ -86,7 +87,9 @@ const TransferWarehouse: React.FC = () => {
   const handleNavigate=()=>{
     navigate("/create-transfer-warehouse")
   }
-
+const handleNavigateDetails=(id:string)=>{
+  navigate(`/transfer-details/${id}`)
+}
   // تنسيق التاريخ
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ar-SA', {
@@ -106,12 +109,23 @@ const TransferWarehouse: React.FC = () => {
     }).format(amount);
   };
 
+  // تحديث حالة المعاملة
+  const handleUpdateStatus = async (id: string, status: string) => {
+    const response = await updateTransactionStatus(id, status);
+    if (response.success) {
+      toast.success(`تم تحديث حالة المعاملة إلى ${status}`);
+      loadTransactions();
+    } else {
+      toast.error(response.message);
+    }
+  };
+
   // تنسيق حالة المعاملة
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       completed: { label: 'مكتملة', class: 'bg-green-100 text-green-800' },
       pending: { label: 'قيد الانتظار', class: 'bg-yellow-100 text-yellow-800' },
-      cancelled: { label: 'ملغية', class: 'bg-red-100 text-red-800' }
+      rejected: { label: 'ملغية', class: 'bg-red-100 text-red-800' }
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || 
@@ -246,7 +260,9 @@ const TransferWarehouse: React.FC = () => {
                     <tr key={transaction._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {transaction.transactionId}
+                          <Link to={`/transfer-details/${transaction._id}`}>
+                            {transaction.transactionId}
+                          </Link>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -283,18 +299,25 @@ const TransferWarehouse: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-2">
                           <button
+                            onClick={()=>handleNavigateDetails(transaction._id)}
                             className="text-blue-600 hover:text-blue-900 p-1 rounded"
                             title="عرض التفاصيل"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            className="text-green-600 hover:text-green-900 p-1 rounded"
-                            title="تحميل التقرير"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
+
+              {transaction.status === "pending" && (
+  <>
+    <button onClick={() => handleUpdateStatus(transaction._id, "completed")} className="text-green-600 hover:text-green-900 p-1 rounded" title="قبول النقل">
+      <Check className='w-4 h-4' />
+    </button>
+    <button onClick={() => handleUpdateStatus(transaction._id, "rejected")} className="text-red-600 hover:text-red-900 p-1 rounded" title="رفض النقل">
+      <X className='w-4 h-4' />
+    </button>
+  </>
+)}
+
+                       </div>
                       </td>
                     </tr>
                   ))}
