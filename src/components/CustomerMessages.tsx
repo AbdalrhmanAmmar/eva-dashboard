@@ -11,6 +11,8 @@ const CustomerMessages: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<IContactForm[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isOpenDetails, setIsOpenDetails] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<IContactForm | null>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -47,6 +49,13 @@ const CustomerMessages: React.FC = () => {
       (message.OrderForm?.toString() || '').includes(searchTerm)
     );
   });
+
+  const handleopenDetails = (message: IContactForm) => {
+    setIsOpenDetails(true)
+    setSelectedMessage(message);
+    
+
+  }
 
   return (
     <div className="space-y-6">
@@ -118,7 +127,7 @@ const CustomerMessages: React.FC = () => {
                         <User className="h-5 w-5 text-blue-500" />
                       </div>
                       <div className="mr-4">
-                        <div className="text-sm font-medium text-gray-900">{message.Fullname}</div>
+                        <div role='button' className="text-sm font-medium text-gray-900" onClick={() => handleopenDetails(message)}>{message.Fullname}</div>
                       </div>
                     </div>
                   </td>
@@ -145,6 +154,33 @@ const CustomerMessages: React.FC = () => {
       </div>
 
       {/* Pagination would go here */}
+      {isOpenDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-11/12 max-w-2xl">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">تفاصيل الرسالة</h2>
+            <div className="mb-4">
+              <strong>الاسم:</strong> {selectedMessage?.Fullname}
+            </div>
+            <div className="mb-4">
+              <strong>رقم الهاتف:</strong> {selectedMessage?.PhoneNumber}
+            </div>
+            <div className="mb-4">
+              <strong>التفاصيل:</strong> {selectedMessage?.Details}
+            </div>
+            <div className="mb-4">
+              <strong>رقم الطلب:</strong> {selectedMessage?.OrderForm ? `ORD-${selectedMessage.OrderForm}` : 'N/A'}
+            </div>
+            <div className="mb-4">
+              <strong>تاريخ الطلب:</strong> {formatArabicDate(selectedMessage?.createdAt)}
+            </div>
+            <div className="flex justify-end">
+              <button className="bg-blue-500 text-white px-4 py-2 rounded-lg" onClick={() => setIsOpenDetails(false)}>
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

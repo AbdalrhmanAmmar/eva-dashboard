@@ -4,8 +4,8 @@ import { useAuthStore } from "../store/authStore";
 
 // إعداد Axios
 const api = axios.create({
-  // baseURL: "https://back-api.evasaudi.com/api",
-  baseURL:"http://localhost:4000/api",
+  baseURL: "https://back-api.evasaudi.com/api",
+  // baseURL:"http://localhost:4000/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -26,7 +26,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // تسجيل الخطأ للتشخيص
+ 
     console.error('API Error:', error);
     
     if (error.response?.status === 401) {
