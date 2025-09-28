@@ -127,7 +127,7 @@ const CustomerMessages: React.FC = () => {
                         <User className="h-5 w-5 text-blue-500" />
                       </div>
                       <div className="mr-4">
-                        <div role='button' className="text-sm font-medium text-gray-900" onClick={() => handleopenDetails(message)}>{message.Fullname}</div>
+                        <div role='button' className="text-sm text-blue-600 font-medium" onClick={() => handleopenDetails(message)}>{message.Fullname}</div>
                       </div>
                     </div>
                   </td>
