@@ -17,6 +17,10 @@ import {
   type TransferItem,
 } from '../../api/TransferWarehouse';
 
+interface SelectedProduct extends Product {
+  selectedQuantity: number;
+}
+
 // Component for individual product transfer card
 interface ProductTransferCardProps {
   product: Product;
@@ -26,7 +30,6 @@ interface ProductTransferCardProps {
 
 function ProductTransferCard({ product, onAddTransfer, isInTransferList }: ProductTransferCardProps) {
   const [quantity, setQuantity] = useState(1);
-  const [poroductgroup, setProductgroup] = usestate()
 
   const handleAdd = () => {
     onAddTransfer(product._id, quantity);
@@ -79,12 +82,15 @@ function TransferQuantities() {
   const [destinationWarehouse, setDestinationWarehouse] = useState('');
   const [sourceProducts, setSourceProducts] = useState<Product[]>([]);
   const [transferItems, setTransferItems] = useState<TransferItem[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [transferring, setTransferring] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [modalSearchQuery, setModalSearchQuery] = useState('');
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [modalSearchTerm, setModalSearchTerm] = useState('');
 
   // Load warehouses on component mount
   useEffect(() => {
@@ -145,6 +151,43 @@ function TransferQuantities() {
     }
   };
 
+  // Handle product selection in modal
+  const handleProductSelection = (product: Product) => {
+    const isSelected = selectedProducts.some(p => p._id === product._id);
+    
+    if (isSelected) {
+      // Remove product from selection
+      setSelectedProducts(prev => prev.filter(p => p._id !== product._id));
+    } else {
+      // Add product to selection with default quantity of 1
+      const selectedProduct: SelectedProduct = {
+        ...product,
+        selectedQuantity: 1
+      };
+      setSelectedProducts(prev => [...prev, selectedProduct]);
+    }
+  };
+
+  // Handle quantity change for selected products
+  const handleQuantityChange = (productId: string, quantity: number) => {
+    const product = sourceProducts.find(p => p._id === productId);
+    if (!product) return;
+    
+    // Clamp quantity between 1 and available quantity
+    const clampedQuantity = Math.max(1, Math.min(product.quantity, quantity));
+    
+    setSelectedProducts(selectedProducts.map(p => 
+      p._id === productId 
+        ? { ...p, selectedQuantity: clampedQuantity }
+        : p
+    ));
+  };
+
+  // Remove selected product
+  const removeSelectedProduct = (productId: string) => {
+    setSelectedProducts(selectedProducts.filter(p => p._id !== productId));
+  };
+
   // Calculate total transfer value
   const calculateTotalValue = async () => {
     if (!sourceWarehouse || transferItems.length === 0) return;
@@ -194,7 +237,7 @@ function TransferQuantities() {
 
   // Handle transfer execution
   const handleTransfer = async () => {
-    if (!sourceWarehouse || !destinationWarehouse || transferItems.length === 0) {
+    if (!sourceWarehouse || !destinationWarehouse || selectedProducts.length === 0) {
       toast.error('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
@@ -204,9 +247,15 @@ function TransferQuantities() {
       return;
     }
 
+    // Convert selectedProducts to transferItems format
+    const transferItemsFromSelected: TransferItem[] = selectedProducts.map(product => ({
+      productId: product._id,
+      quantity: product.selectedQuantity
+    }));
+
     // Validate transfer quantities
     try {
-      const validationResponse = await validateTransferQuantities(sourceWarehouse, transferItems);
+      const validationResponse = await validateTransferQuantities(sourceWarehouse, transferItemsFromSelected);
       if (!validationResponse.success) {
         toast.error(validationResponse.message);
         return;
@@ -221,14 +270,14 @@ function TransferQuantities() {
       const response = await transferProducts({
         sourceWarehouseId: sourceWarehouse,
         destinationWarehouseId: destinationWarehouse,
-        items: transferItems,
+        items: transferItemsFromSelected,
         notes: 'نقل كميات بين المخازن'
       });
 
       if (response.success) {
         toast.success('تم نقل المنتجات بنجاح');
         // Reset form
-        setTransferItems([]);
+        setSelectedProducts([]);
         setDestinationWarehouse('');
         // Reload source products to reflect new quantities
         loadSourceProducts();
@@ -297,12 +346,12 @@ function TransferQuantities() {
               
               {sourceWarehouse && (
                 <Button
-                  onClick={() => setShowProductSelector(true)}
+                  onClick={() => setShowProductModal(true)}
                   className="w-full flex items-center justify-center gap-2"
                   variant="outline"
                 >
                   <Plus className="w-4 h-4" />
-                  إضافة منتجات هذا المخزن
+                  إضافة منتجات من المخزن
                 </Button>
               )}
             </div>
@@ -334,7 +383,7 @@ function TransferQuantities() {
             </div>
 
             {/* قسم المنتجات المحددة للنقل */}
-            {transferItems.length > 0 && (
+            {selectedProducts.length > 0 && (
               <div className="bg-card p-6 rounded-lg border border-border">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -344,42 +393,84 @@ function TransferQuantities() {
                     <h3 className="text-lg font-semibold">المنتجات المحددة للنقل</h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{transferItems.length} منتج</Badge>
+                    <Badge variant="secondary">{selectedProducts.length} منتج</Badge>
                     {totalValue > 0 && (
                       <Badge variant="outline">القيمة الإجمالية: {totalValue.toLocaleString()} ر.س</Badge>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {transferItems.map(item => {
-                    const product = sourceProducts.find(p => p._id === item.productId);
-                    if (!product) return null;
-                    
-                    return (
-                      <div key={item.productId} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{product.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            الكمية المتاحة: {product.quantity} | الكود: {product.sku}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-center">
-                            <p className="text-sm font-medium">{item.quantity}</p>
-                            <p className="text-xs text-muted-foreground">وحدة</p>
-                          </div>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removeTransferItem(item.productId)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">الصورة</th>
+                        <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">اسم المنتج</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">الكود</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">الكمية المتاحة</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">الكمية المطلوبة</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">القيمة</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">إجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedProducts.map(product => (
+                        <tr key={product._id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-center">
+                            {product.images?.[0] ? (
+                              <img
+                                src={`/uploads/product/${product.images[0].url}`}
+                                alt={product.name}
+                                className="w-12 h-12 rounded-lg object-cover mx-auto shadow-sm"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto">
+                                <Package className="w-6 h-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">{product.name}</span>
+                              <span className="text-sm text-muted-foreground">{product.sku}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge variant="outline">{product.sku}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge variant={product.quantity > 10 ? "default" : "destructive"}>
+                              {product.quantity}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Input
+                              type="number"
+                              min="1"
+                              max={product.quantity}
+                              value={product.selectedQuantity}
+                              onChange={(e) => handleQuantityChange(product._id, parseInt(e.target.value) || 1)}
+                              className="w-20 text-center mx-auto"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="font-medium">
+                              {(product.priceBeforeDiscount * product.selectedQuantity).toLocaleString()} ر.س
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => removeSelectedProduct(product._id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -390,7 +481,7 @@ function TransferQuantities() {
         <div className="flex justify-center">
           <Button 
             onClick={handleTransfer}
-            disabled={!sourceWarehouse || !destinationWarehouse || transferItems.length === 0 || transferring}
+            disabled={!sourceWarehouse || !destinationWarehouse || selectedProducts.length === 0 || transferring}
             className="px-8 py-3 text-lg"
           >
             {transferring ? (
@@ -409,6 +500,131 @@ function TransferQuantities() {
       </div>
 
       {/* Modal اختيار المنتجات */}
+      {/* Product Selection Modal */}
+      {showProductModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-foreground">اختيار المنتجات للنقل</h3>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowProductModal(false)} 
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="relative mb-6">
+              <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="ابحث عن منتج..."
+                className="pr-10"
+                value={modalSearchTerm}
+                onChange={(e) => setModalSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex-1 overflow-auto">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/50 sticky top-0">
+                    <tr>
+                      <th className="w-12 px-4 py-3 text-center text-sm font-semibold text-foreground">اختيار</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">الصورة</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-foreground">اسم المنتج</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">الكود</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">الكمية المتاحة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sourceProducts
+                      .filter(product => 
+                        product.name.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
+                        product.sku.toLowerCase().includes(modalSearchTerm.toLowerCase())
+                      )
+                      .map((product) => {
+                        const isSelected = selectedProducts.some(p => p._id === product._id);
+                        const selectedProduct = selectedProducts.find(p => p._id === product._id);
+                        
+                        return (
+                          <tr 
+                            key={product._id} 
+                            className={`border-b border-border hover:bg-muted/30 transition-colors ${
+                              isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                          >
+                            <td className="px-4 py-3 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleProductSelection(product)}
+                                className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {product.images?.[0] ? (
+                                <img
+                                  src={`/uploads/product/${product.images[0].url}`}
+                                  alt={product.name}
+                                  className="w-12 h-12 rounded-lg object-cover mx-auto shadow-sm"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center mx-auto">
+                                  <Package className="w-6 h-6 text-muted-foreground" />
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{product.name}</span>
+                                <span className="text-sm text-muted-foreground">{product.sku}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant="outline">{product.sku}</Badge>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge variant={product.quantity > 10 ? "default" : "destructive"}>
+                                {product.quantity}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center pt-6 border-t border-border">
+              <div className="text-sm text-muted-foreground">
+                تم اختيار {selectedProducts.length} منتج
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowProductModal(false)}
+                >
+                  إلغاء
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowProductModal(false);
+                    setModalSearchTerm('');
+                  }}
+                  disabled={selectedProducts.length === 0}
+                >
+                  تأكيد الاختيار ({selectedProducts.length} منتج)
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Old Product Selector Modal - Remove this section */}
       {showProductSelector && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
