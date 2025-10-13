@@ -17,182 +17,113 @@ import {
   Trash2,
   Building
 } from 'lucide-react';
-import { getAllWarehouses, getProductsByWarehouse, Warehouse } from '../api/warehouseAPI';
-import { Product } from '../api/TransferWarehouse';
-
-interface InventoryItem {
-  id: string;
-  productName: string;
-  productCode: string;
-  price: number;
-  warehouseQuantity: number;
-  reservedQuantity: number;
-  expectedQuantity: number;
-  countedQuantity: number;
-  shortage: number;
-  shortageCost: number;
-  category: string;
-  lastUpdated: string;
-}
+import { getAllProductInWarehouse, WarehouseProductsFilters } from '../api/warehouseAPI';
 
 const InventoryManagement: React.FC = () => {
   const navigate = useNavigate();
-  const [inventoryData, setInventoryData] = useState<InventoryItem[]>([
-    {
-      id: '1',
-      productName: 'جهاز كمبيوتر محمول',
-      productCode: 'LPT-001',
-      price: 4500,
-      warehouseQuantity: 150,
-      reservedQuantity: 30,
-      expectedQuantity: 120,
-      countedQuantity: 115,
-      shortage: 5,
-      shortageCost: 25000,
-      category: 'إلكترونيات',
-      lastUpdated: '2024-01-15'
-    },
-    {
-      id: '2',
-      productName: 'هاتف ذكي',
-      productCode: 'PHN-002',
-      price: 3000,
-      warehouseQuantity: 200,
-      reservedQuantity: 45,
-      expectedQuantity: 155,
-      countedQuantity: 150,
-      shortage: 5,
-      shortageCost: 15000,
-      category: 'إلكترونيات',
-      lastUpdated: '2024-01-14'
-    },
-    {
-      id: '3',
-      productName: 'شاشة LED',
-      productCode: 'MON-003',
-      price: 1200,
-      warehouseQuantity: 80,
-      reservedQuantity: 10,
-      expectedQuantity: 70,
-      countedQuantity: 72,
-      shortage: -2,
-      shortageCost: 0,
-      category: 'شاشات',
-      lastUpdated: '2024-01-13'
-    },
-    {
-      id: '4',
-      productName: 'لوحة مفاتيح',
-      productCode: 'KBD-004',
-      price: 150,
-      warehouseQuantity: 300,
-      reservedQuantity: 60,
-      expectedQuantity: 240,
-      countedQuantity: 235,
-      shortage: 5,
-      shortageCost: 2500,
-      category: 'ملحقات',
-      lastUpdated: '2024-01-12'
-    },
-    {
-      id: '5',
-      productName: 'ماوس لاسلكي',
-      productCode: 'MOU-005',
-      price: 90,
-      warehouseQuantity: 250,
-      reservedQuantity: 40,
-      expectedQuantity: 210,
-      countedQuantity: 210,
-      shortage: 0,
-      shortageCost: 0,
-      category: 'ملحقات',
-      lastUpdated: '2024-01-11'
-    }
-  ]);
 
  
 
   const [searchTerm, setSearchTerm] = useState('');
-    const [products, setProducts] = useState<Product[]>([]);
+
+  // عرض المنتجات القادمة من الـ API في جدول أسفل الصفحة
+  interface DisplayProduct {
+    _id: string;
+    name: string;
+    sku: string;
+    price: number; // السعر قبل الخصم
+    quantity: number; // الكمية في المخزن
+    warehouseName?: string;
+    location?: string;
+  }
+  const [displayProducts, setDisplayProducts] = useState<DisplayProduct[]>([]);
   
   const [isLoading, setIsLoading] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState('all');
-    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-      const [loading, setLoading] = useState(true);
-        const [error, setError] = useState<string | null>(null);
+  const [warehouseOptions, setWarehouseOptions] = useState<{ id: string; name: string }[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
         console.log(selectedWarehouse)
 
-        const fetchProducts= async()=>{
-          try{
-            const product= await getProductsByWarehouse(selectedWarehouse)
-            setProducts(product.products)
-            console.log(product.products)
-          }
-          catch(error){
-            console.log(error)
+        // إعداد فلاتر جلب المنتجات من الـ API
+        const [filters, setFilters] = useState<WarehouseProductsFilters>({
+          sort: 'name',
+          order: 'asc',
+          page: 1,
+          limit: 20,
+        });
 
+        const loadProducts = async () => {
+          try {
+            setIsLoading(true);
+            const response: any = await getAllProductInWarehouse({
+              ...filters,
+              warehouseId: selectedWarehouse !== 'all' ? selectedWarehouse : undefined,
+              term: searchTerm || undefined,
+            });
+
+            // تحويل الاستجابة إلى قائمة منتجات مسطحة للعرض
+            let products: DisplayProduct[] = [];
+            if (response.warehouses) {
+              // بناء خيارات المخازن من الاستجابة
+              const opts = (response.warehouses || []).map((w: any) => ({ id: w.id ?? w._id, name: w.name }));
+              setWarehouseOptions(opts);
+              products = response.warehouses.flatMap((w: any) =>
+                (w.products || []).map((p: any) => ({
+                  _id: p._id,
+                  name: p.name,
+                  sku: p.sku,
+                  price: p.priceBeforeDiscount,
+                  quantity: p.quantity,
+                  warehouseName: w.name,
+                  location: w.location,
+                }))
+              );
+            } else if (response.products) {
+              products = (response.products || []).map((p: any) => ({
+                _id: p._id,
+                name: p.name,
+                sku: p.sku,
+                price: p.priceBeforeDiscount,
+                quantity: p.quantity,
+                warehouseName: p.warehouse?.name,
+                location: p.warehouse ? `${p.warehouse.city}, ${p.warehouse.district}` : undefined,
+              }));
+            }
+
+            setDisplayProducts(products);
+          } catch (err) {
+            console.error(err);
+            setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
+          } finally {
+            setIsLoading(false);
           }
-        }
+        };
       
     
   
 
   // Filter data based on search (تم حذف فلترة الفئات)
-  const filteredData = inventoryData.filter(item => {
-    const matchesSearch = item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.productCode.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesWarehouse = true; // سيتم استبدالها لاحقًا بحقل المخزن الحقيقي عبر الـ API
-    return matchesSearch && matchesWarehouse;
-  });
- const fetchWarehouses=async()=>{
-    try{
-      const data = await getAllWarehouses()
-      console.log(data.warehouses)
-      setWarehouses(data.warehouses)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
-    } finally {
-      setLoading(false);
-    }
-  }
+  // لم تعد هناك بيانات تجريبية. يتم الاعتماد على بيانات API فقط.
 
-
-  useEffect(() => {
-    fetchWarehouses()
-  
-  
-  }, [])
 
 useEffect(() => {
-  if (selectedWarehouse && selectedWarehouse !== 'all') {
-    fetchProducts()
-  }
-}, [selectedWarehouse])
+  // جلب المنتجات عند تغيير المخزن أو البحث أو الفلاتر
+  loadProducts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [selectedWarehouse, searchTerm, filters.sort, filters.order, filters.page, filters.limit])
   
-  
-  
-
-  // Calculate totals
+  // الحسابات تعتمد على بيانات العرض القادمة من الـ API
   const totals = {
-    warehouseQuantity: inventoryData.reduce((sum, item) => sum + item.warehouseQuantity, 0),
-    reservedQuantity: inventoryData.reduce((sum, item) => sum + item.reservedQuantity, 0),
-    expectedQuantity: inventoryData.reduce((sum, item) => sum + item.expectedQuantity, 0),
-    countedQuantity: inventoryData.reduce((sum, item) => sum + item.countedQuantity, 0),
-    shortage: inventoryData.reduce((sum, item) => sum + item.shortage, 0),
-    shortageCost: inventoryData.reduce((sum, item) => sum + item.shortageCost, 0),
-    // إجمالي تكلفة المخزون = سعر المنتج × الكمية في المخزن (مجموع لجميع المنتجات)
-    totalInventoryCost: inventoryData.reduce((sum, item) => sum + (item.price * item.warehouseQuantity), 0),
-    // إجمالي تكلفة المخزون المتوقعة = سعر المنتج × الكمية المتوقعة (مجموع لجميع المنتجات)
-    totalExpectedInventoryCost: inventoryData.reduce((sum, item) => sum + (item.price * item.expectedQuantity), 0)
+    warehouseQuantity: displayProducts.reduce((sum, item) => sum + (item.quantity || 0), 0),
+    expectedQuantity: displayProducts.length, // الكمية المتوقعة لكل منتج = 1
+    totalInventoryCost: displayProducts.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0),
+    totalExpectedInventoryCost: displayProducts.reduce((sum, item) => sum + (item.price || 0), 0)
   };
 
-  // Calculate statistics
   const stats = {
-    totalItems: inventoryData.length,
-    itemsWithShortage: inventoryData.filter(item => item.shortage > 0).length,
-    itemsOverstock: inventoryData.filter(item => item.shortage < 0).length,
-    itemsInStock: inventoryData.filter(item => item.shortage === 0).length
+    totalItems: displayProducts.length,
+    itemsInStock: displayProducts.filter(item => (item.quantity || 0) > 0).length
   };
 
   const refreshData = () => {
@@ -262,7 +193,8 @@ useEffect(() => {
         'الكمية في المخزن',
         'الكمية المتوقعة',
         'قيمة مخزون المنتج',
-        'قيمة مخزون المنتج المتوقعة'
+        'قيمة مخزون المنتج المتوقعة',
+        'المخزن',
       ]);
       headerRow.eachCell((cell) => {
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -278,17 +210,18 @@ useEffect(() => {
       // زيادة ارتفاع صف العنوان لتحسين التباعد
       headerRow.height = 22;
 
-      // Data rows
-      filteredData.forEach((item, index) => {
+      // Data rows من displayProducts
+      displayProducts.forEach((item, index) => {
         const row = sheet.addRow([
           index + 1,
-          item.productName,
-          item.productCode,
-          item.price,
-          item.warehouseQuantity,
-          item.expectedQuantity,
-          item.price * item.warehouseQuantity,
-          item.price * item.expectedQuantity,
+          item.name,
+          item.sku,
+          item.price || 0,
+          item.quantity || 0,
+          1,
+          (item.price || 0) * (item.quantity || 0),
+          (item.price || 0) * 1,
+          item.warehouseName || '',
         ]);
         row.eachCell((cell, colNumber) => {
           const isMoney = colNumber === 4 || colNumber === 7 || colNumber === 8; // price and totals
@@ -316,21 +249,23 @@ useEffect(() => {
         'الكمية في المخزن',
         'الكمية المتوقعة',
         'قيمة مخزون المنتج',
-        'قيمة مخزون المنتج المتوقعة'
+        'قيمة مخزون المنتج المتوقعة',
+        'المخزن',
       ];
       const maxLens = headers.map(h => h.length);
-      filteredData.forEach((item) => {
-        maxLens[0] = Math.max(maxLens[0], String(filteredData.length).length);
-        maxLens[1] = Math.max(maxLens[1], item.productName.length);
-        maxLens[2] = Math.max(maxLens[2], item.productCode.length);
-        maxLens[3] = Math.max(maxLens[3], item.price.toLocaleString().length);
-        maxLens[4] = Math.max(maxLens[4], item.warehouseQuantity.toLocaleString().length);
-        maxLens[5] = Math.max(maxLens[5], item.expectedQuantity.toLocaleString().length);
-        maxLens[6] = Math.max(maxLens[6], (item.price * item.warehouseQuantity).toLocaleString().length);
-        maxLens[7] = Math.max(maxLens[7], (item.price * item.expectedQuantity).toLocaleString().length);
+      maxLens[0] = Math.max(maxLens[0], String(displayProducts.length).length);
+      displayProducts.forEach((item) => {
+        maxLens[1] = Math.max(maxLens[1], item.name.length);
+        maxLens[2] = Math.max(maxLens[2], (item.sku || '').length);
+        maxLens[3] = Math.max(maxLens[3], (item.price || 0).toLocaleString().length);
+        maxLens[4] = Math.max(maxLens[4], (item.quantity || 0).toLocaleString().length);
+        maxLens[5] = Math.max(maxLens[5], String(1).length);
+        maxLens[6] = Math.max(maxLens[6], ((item.price || 0) * (item.quantity || 0)).toLocaleString().length);
+        maxLens[7] = Math.max(maxLens[7], ((item.price || 0) * 1).toLocaleString().length);
+        maxLens[8] = Math.max(maxLens[8], (item.warehouseName || '').length);
       });
-      const minWidths = [6, 14, 12, 12, 12, 12, 14, 14];
-      const maxWidths = [9, 40, 20, 16, 16, 16, 30, 32];
+      const minWidths = [6, 14, 12, 12, 12, 12, 14, 14, 14];
+      const maxWidths = [9, 40, 20, 16, 16, 16, 30, 32, 24];
       const padding = 4;
       maxLens.forEach((len, i) => {
         const w = Math.min(Math.max(len + padding, minWidths[i]), maxWidths[i]);
@@ -346,10 +281,10 @@ useEffect(() => {
         'الإجماليات',
         '',
         '',
-        filteredData.reduce((sum, i) => sum + i.warehouseQuantity, 0),
-        filteredData.reduce((sum, i) => sum + i.expectedQuantity, 0),
-        filteredData.reduce((sum, i) => sum + i.price * i.warehouseQuantity, 0),
-        filteredData.reduce((sum, i) => sum + i.price * i.expectedQuantity, 0),
+        displayProducts.reduce((sum, i) => sum + (i.quantity || 0), 0),
+        displayProducts.length,
+        displayProducts.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 0)), 0),
+        displayProducts.reduce((sum, i) => sum + (i.price || 0), 0),
       ]);
       totalsRow.eachCell((cell, colNumber) => {
         cell.font = { bold: true };
@@ -375,16 +310,7 @@ useEffect(() => {
     }
   };
 
-  // حذف منتج مع التأكيد والتحقق من أن الكمية تساوي 0
-  const handleDelete = (item: InventoryItem) => {
-    if (item.warehouseQuantity > 0) {
-      alert('لا يمكن حذف منتج به مخزون. يجب أن تكون الكمية 0 لحذف المنتج من المخزن.');
-      return;
-    }
-    const confirmed = window.confirm(`هل أنت متأكد من حذف المنتج "${item.productName}" من المستودع؟ لن يمكن التراجع عن هذه العملية.`);
-    if (!confirmed) return;
-    setInventoryData(prev => prev.filter(i => i.id !== item.id));
-  };
+  // تم حذف دوال قديمة مرتبطة ببيانات تجريبية
 
   // تم حذف قائمة الفئات، لذلك لا حاجة لمتغير categories
 
@@ -487,45 +413,156 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Responsive */}
       <div className="bg-card border border-border rounded-xl p-6 shadow-soft">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="relative flex-1 md:order-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {/* بحث بالاسم */}
+          <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="البحث في المنتجات (الاسم أو الكود)..."
+              placeholder="بحث بالاسم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
+              className="w-full pl-12 pr-12 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
             />
           </div>
 
-          {/* Warehouse Selector positioned to the right of search */}
-          <div className="relative min-w-[220px] md:order-1">
+          {/* بحث بالكود SKU */}
+          <input
+            type="text"
+            placeholder="بحث بالكود SKU..."
+            value={filters.sku || ''}
+            onChange={(e) => setFilters(prev => ({ ...prev, sku: e.target.value || undefined }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          />
+
+          {/* اختيار المخزن */}
+          <div className="relative">
             <Building className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <select
               value={selectedWarehouse}
               onChange={(e) => setSelectedWarehouse(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white transition-all duration-200"
-              title="اختيار المخزن"
+              className="w-full pl-12 pr-12 py-3 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
             >
-              {warehouses.map((item)=>{
-                return <>
-                                <option key={item._id} value={item._id}>{item.name}</option>
-
-                </>
-
-              })}
-
+              <option value="all">كل المخازن</option>
+              {warehouseOptions.map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
             </select>
           </div>
 
-          
+          {/* المتوفر فقط */}
+          <div className="flex items-center gap-2">
+            <input
+              id="inStock"
+              type="checkbox"
+              checked={!!filters.inStock}
+              onChange={(e) => setFilters(prev => ({ ...prev, inStock: e.target.checked }))}
+              className="w-5 h-5"
+            />
+            <label htmlFor="inStock" className="text-sm">المتوفر فقط</label>
+          </div>
+
+          {/* الحد الأدنى/الأقصى للكمية */}
+          <input
+            type="number"
+            min={0}
+            placeholder="الحد الأدنى للكمية"
+            value={filters.minQty ?? ''}
+            onChange={(e) => setFilters(prev => ({ ...prev, minQty: e.target.value ? Number(e.target.value) : undefined }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          />
+          <input
+            type="number"
+            min={0}
+            placeholder="الحد الأقصى للكمية"
+            value={filters.maxQty ?? ''}
+            onChange={(e) => setFilters(prev => ({ ...prev, maxQty: e.target.value ? Number(e.target.value) : undefined }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          />
+
+          {/* الحد الأدنى/الأقصى للسعر */}
+          <input
+            type="number"
+            min={0}
+            placeholder="الحد الأدنى للسعر"
+            value={filters.minPrice ?? ''}
+            onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value ? Number(e.target.value) : undefined }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          />
+          <input
+            type="number"
+            min={0}
+            placeholder="الحد الأقصى للسعر"
+            value={filters.maxPrice ?? ''}
+            onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value ? Number(e.target.value) : undefined }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          />
+
+          {/* الترتيب */}
+          <select
+            value={filters.sort}
+            onChange={(e) => setFilters(prev => ({ ...prev, sort: e.target.value }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          >
+            <option value="name">الاسم</option>
+            <option value="sku">الكود</option>
+            <option value="quantity">الكمية</option>
+            <option value="priceBeforeDiscount">السعر</option>
+          </select>
+          <select
+            value={filters.order}
+            onChange={(e) => setFilters(prev => ({ ...prev, order: e.target.value as 'asc' | 'desc' }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          >
+            <option value="asc">تصاعدي</option>
+            <option value="desc">تنازلي</option>
+          </select>
+
+          {/* الترقيم */}
+          <input
+            type="number"
+            min={1}
+            placeholder="صفحة"
+            value={filters.page ?? 1}
+            onChange={(e) => setFilters(prev => ({ ...prev, page: Number(e.target.value) }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          />
+          <input
+            type="number"
+            min={1}
+            placeholder="عدد العناصر"
+            value={filters.limit ?? 20}
+            onChange={(e) => setFilters(prev => ({ ...prev, limit: Number(e.target.value) }))}
+            className="w-full py-3 px-4 bg-secondary rounded-lg border-0 focus:ring-2 focus:ring-primary focus:bg-white"
+          />
+        </div>
+
+        {/* أزرار الإجراءات */}
+        <div className="flex flex-wrap items-center gap-3 mt-4">
+          <button
+            onClick={loadProducts}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          >
+            <Filter className="w-4 h-4" />
+            تطبيق الفلاتر
+          </button>
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedWarehouse('all');
+              setFilters({ sort: 'name', order: 'asc', page: 1, limit: 20 });
+              loadProducts();
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-foreground border border-primary rounded-lg"
+          >
+            إعادة الضبط
+          </button>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table - المنتجات مع القيم الحالية والمتوقعة */}
       <div className="bg-card border border-border rounded-xl shadow-soft overflow-hidden max-w-full">
         <div className="overflow-x-hidden max-w-full">
           <table className="w-full">
@@ -539,13 +576,14 @@ useEffect(() => {
                 <th className="px-3 md:px-6 py-4 text-right text-sm font-semibold text-foreground">الكمية المتوقعة</th>
                 <th className="px-3 md:px-6 py-4 text-right text-sm font-semibold text-foreground">قيمة مخزون المنتج</th>
                 <th className="px-3 md:px-6 py-4 text-right text-sm font-semibold text-foreground">قيمة مخزون المنتج المتوقعة</th>
-                <th className="px-3 md:px-6 py-4 text-right text-sm font-semibold text-foreground">الإجراءات</th>
+                <th className="px-3 md:px-6 py-4 text-right text-sm font-semibold text-foreground">المخزن</th>
+
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((item, index) => (
+              {displayProducts.map((item, index) => (
                 <tr 
-                  key={item.id} 
+                  key={item._id} 
                   className={`border-b border-border hover:bg-secondary/30 transition-all duration-200 ${
                     index % 2 === 0 ? 'bg-transparent' : 'bg-secondary/10'
                   }`}
@@ -557,39 +595,31 @@ useEffect(() => {
                         <Package className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-medium text-foreground whitespace-normal break-words">{item.productName}</div>
-                        <div className="text-xs text-muted-foreground truncate">{item.category}</div>
+                        <div className="font-medium text-foreground whitespace-normal break-words">{item.name}</div>
+                        {item.location && (
+                          <div className="text-xs text-muted-foreground truncate">{item.location}</div>
+                        )}
                       </div>
                     </div>
                   </td>
                   <td className="px-3 md:px-6 py-4">
                     <span className="font-mono text-sm bg-primary/10 text-primary px-2 py-1 rounded break-all inline-block max-w-full">
-                      {item.productCode}
+                      {item.sku}
                     </span>
                   </td>
-            <td className="px-3 md:px-6 py-4 font-medium break-words">{item.price.toLocaleString()}</td>
-                  <td className="px-3 md:px-6 py-4 font-medium break-words">{item.warehouseQuantity.toLocaleString()}</td>
-                  <td className="px-3 md:px-6 py-4 text-blue-600 font-medium break-words">{item.expectedQuantity.toLocaleString()}</td>
-            <td className="px-3 md:px-6 py-4 font-medium break-words">{(item.price * item.warehouseQuantity).toLocaleString()}</td>
-            <td className="px-3 md:px-6 py-4 font-medium break-words">{(item.price * item.expectedQuantity).toLocaleString()}</td>
-                  <td className="px-3 md:px-6 py-4">
-                    <button
-                      className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={item.warehouseQuantity > 0 ? 'لا يمكن الحذف إلا عندما تكون الكمية 0' : 'حذف المنتج من المخزن'}
-                      onClick={() => handleDelete(item)}
-                      disabled={item.warehouseQuantity > 0}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                  <td className="px-3 md:px-6 py-4 font-medium break-words">{item.price.toLocaleString()}</td>
+                  <td className="px-3 md:px-6 py-4 font-medium break-words">{item.quantity.toLocaleString()}</td>
+                  <td className="px-3 md:px-6 py-4 text-blue-600 font-medium break-words">1</td>
+                  <td className="px-3 md:px-6 py-4 font-medium break-words">{(item.price * item.quantity).toLocaleString()}</td>
+                  <td className="px-3 md:px-6 py-4 font-medium break-words">{(item.price * 1).toLocaleString()}</td>
+                  <td className="px-3 md:px-6 py-4 font-medium break-words">{item.warehouseName || '-'}</td>
                 </tr>
               ))}
               
             </tbody>
           </table>
         </div>
-
-        {filteredData.length === 0 && (
+        {displayProducts.length === 0 && (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-muted-foreground" />
