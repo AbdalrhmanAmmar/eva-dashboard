@@ -35,6 +35,7 @@ import EditContact from './pages/Contacts/EditContact';
 import CreateUser from './pages/CreateUser';
 import TransferWarehouse from './pages/warehouse/TransferWarehouse';
 import Transferdetails from './pages/warehouse/transfer/Transferdetails';
+import AddToInventory from './pages/AddToInventory';
 
 
 function App() {
@@ -77,6 +78,7 @@ function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="offers" element={<Offers />} />
 <Route path="/invoice/:id" element={<Invoice />} />
+<Route path="/Add-Inventory" element={<AddToInventory />} />
           <Route path="create-offer" element={<CreateOffer />} />
           <Route path="update-offer/:id" element={<UpdateOffer />} />
 
